@@ -2,6 +2,13 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+  FileText,
+  Sparkles,
+  GitBranch,
+  Check,
+  ChevronRight,
+} from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,15 +20,8 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { bootstrapApp } from '@/store/bootstrap';
 import { createForm } from '@/store/slices/formsSlice';
@@ -30,6 +30,7 @@ import { START_ANCHOR } from '@/lib/constants';
 import { ErrorState } from '@/components/shared/ScreenStates';
 import type { FormContent } from '@/types';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 function slugify(name: string) {
   return name
@@ -142,16 +143,40 @@ function hiringTemplate(name: string): FormContent {
   };
 }
 
+const startOptions = [
+  {
+    id: 'blank' as const,
+    title: 'Blank form',
+    description: 'Start from scratch with an empty canvas.',
+    icon: FileText,
+  },
+  {
+    id: 'template' as const,
+    title: 'Hiring template',
+    description: 'Pre-filled with common hiring fields and layout.',
+    icon: Sparkles,
+  },
+  {
+    id: 'child' as const,
+    title: 'Inherit from a form',
+    description: 'Create a child that inherits from an existing parent.',
+    icon: GitBranch,
+  },
+];
+
 export default function NewFormPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const forms = useAppSelector((s) => s.forms.items);
   const initialized = useAppSelector((s) => s.ui.initialized);
   const error = useAppSelector((s) => s.ui.error);
-  const [path, setPath] = useState<'blank' | 'template' | 'child'>('blank');
+  const [path, setPath] = useState<'blank' | 'template' | 'child' | null>(
+    'blank',
+  );
   const [parentId, setParentId] = useState<string>('');
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
+  const [slugTouched, setSlugTouched] = useState(false);
   const [creating, setCreating] = useState(false);
 
   const parentOptions = useMemo(() => {
@@ -164,32 +189,33 @@ export default function NewFormPage() {
 
   const onNameChange = (v: string) => {
     setName(v);
-    if (!slug) setSlug(slugify(v));
+    if (!slugTouched) setSlug(slugify(v));
   };
 
+  const selectedParent = forms.find((f) => f.id === parentId) ?? null;
+  const canCreate =
+    !!path &&
+    !!name.trim() &&
+    !!slug.trim() &&
+    (path !== 'child' || !!parentId) &&
+    !creating;
+  const disabledReason = !path
+    ? 'Choose how to start'
+    : !name.trim()
+      ? 'Enter a form name'
+      : !slug.trim()
+        ? 'Enter a slug'
+        : path === 'child' && !parentId
+          ? 'Select a parent form'
+          : null;
+
   const onCreate = async () => {
-    if (!name || !slug) {
-      toast.error('Name and slug are required');
-      return;
-    }
-    if (path === 'child' && !parentId) {
-      toast.error('Select a parent form');
-      return;
-    }
+    if (!canCreate || !path) return;
     setCreating(true);
     try {
       let content: FormContent;
-      if (path === 'blank') {
-        content = {
-          settings: { title: name },
-          ownFields: [],
-          elements: [],
-          overrides: {},
-          locks: [],
-        };
-      } else if (path === 'template') {
-        content = hiringTemplate(name);
-      } else {
+      if (path === 'template') content = hiringTemplate(name);
+      else {
         content = {
           settings: { title: name },
           ownFields: [],
@@ -200,8 +226,8 @@ export default function NewFormPage() {
       }
       const created = await dispatch(
         createForm({
-          name,
-          slug,
+          name: name.trim(),
+          slug: slug.trim(),
           parentFormId: path === 'child' ? parentId : null,
           content,
         }),
@@ -218,11 +244,16 @@ export default function NewFormPage() {
   if (!initialized && !error) {
     return (
       <div className="space-y-6" aria-busy="true">
-        <PageHeader title="Create form" />
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Skeleton className="h-72 w-full" />
-          <Skeleton className="h-72 w-full" />
+        <PageHeader
+          title="Create form"
+          description="Start a new form from scratch, a template, or an existing parent."
+        />
+        <div className="grid gap-4 md:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-40 rounded-xl" />
+          ))}
         </div>
+        <Skeleton className="h-72 rounded-xl" />
       </div>
     );
   }
@@ -230,7 +261,10 @@ export default function NewFormPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Create form" />
+        <PageHeader
+          title="Create form"
+          description="Start a new form from scratch, a template, or an existing parent."
+        />
         <ErrorState
           title="Could not load form creator"
           message={error}
@@ -242,121 +276,237 @@ export default function NewFormPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Create form" />
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Start from</CardTitle>
-            <CardDescription>
-              Choose how you want to create your form.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <RadioGroup
-              value={path}
-              onValueChange={(v) => setPath(v as any)}
-              className="space-y-3"
-            >
-              <div className="flex items-start gap-2">
-                <RadioGroupItem
-                  value="blank"
-                  id="path-blank"
-                  className="mt-1"
-                />
-                <Label htmlFor="path-blank" className="font-normal">
-                  <div className="font-medium">Blank form</div>
-                  <div className="text-muted-foreground text-sm">
-                    Start from scratch.
-                  </div>
-                </Label>
-              </div>
-              <div className="flex items-start gap-2">
-                <RadioGroupItem
-                  value="template"
-                  id="path-template"
-                  className="mt-1"
-                />
-                <Label htmlFor="path-template" className="font-normal">
-                  <div className="font-medium">Hiring template</div>
-                  <div className="text-muted-foreground text-sm">
-                    Pre-filled with common hiring fields.
-                  </div>
-                </Label>
-              </div>
-              <div className="flex items-start gap-2">
-                <RadioGroupItem
-                  value="child"
-                  id="path-child"
-                  className="mt-1"
-                />
-                <Label htmlFor="path-child" className="font-normal">
-                  <div className="font-medium">Child of existing form</div>
-                  <div className="text-muted-foreground text-sm">
-                    Inherit from a parent form.
-                  </div>
-                </Label>
-              </div>
-            </RadioGroup>
+      <PageHeader
+        title="Create form"
+        description="Start a new form from scratch, a template, or an existing parent."
+      />
 
-            {path === 'child' ? (
-              <div className="mt-4 space-y-2">
-                <Label>Parent form</Label>
-                <Select
-                  value={parentId}
-                  onValueChange={(v) => setParentId(v ?? '')}
+      <section className="space-y-3">
+        <h2 className="text-foreground text-sm font-medium">
+          1. Choose a starting point
+        </h2>
+        <div className="grid gap-3 md:grid-cols-3">
+          {startOptions.map((opt) => {
+            const Icon = opt.icon;
+            const selected = path === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setPath(opt.id)}
+                className={cn(
+                  'group focus-visible:ring-ring flex flex-col items-start gap-3 rounded-xl border p-4 text-left transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                  selected
+                    ? 'border-primary bg-accent/40 ring-primary/20 shadow-sm ring-1'
+                    : 'border-border bg-surface hover:border-border-strong hover:bg-surface-muted/40',
+                )}
+              >
+                <span
+                  className={cn(
+                    'flex size-10 items-center justify-center rounded-lg border',
+                    selected
+                      ? 'border-primary/20 bg-primary text-primary-foreground'
+                      : 'border-border bg-surface-muted text-muted-foreground',
+                  )}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select parent form" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {parentOptions.map((f) => (
-                      <SelectItem key={f.id} value={f.id} disabled={f.disabled}>
-                        {f.name} (depth {f.depth}
-                        {f.disabled ? ', max depth reached' : ''})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
+                  <Icon className="size-5" aria-hidden />
+                </span>
+                <span className="space-y-1">
+                  <span className="text-foreground block text-sm font-semibold">
+                    {opt.title}
+                  </span>
+                  <span className="text-muted-foreground block text-sm">
+                    {opt.description}
+                  </span>
+                </span>
+                {selected ? (
+                  <span className="text-primary mt-auto inline-flex items-center gap-1 text-xs font-medium">
+                    <Check className="size-3.5" aria-hidden /> Selected
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Details</CardTitle>
-            <CardDescription>Name and slug for the new form.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="form-name">Name</Label>
-              <Input
-                id="form-name"
-                value={name}
-                onChange={(e) => onNameChange(e.target.value)}
-                placeholder="e.g. Frontend Developer"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="form-slug">Slug</Label>
-              <Input
-                id="form-slug"
-                value={slug}
-                onChange={(e) => setSlug(slugify(e.target.value))}
-                placeholder="frontend-developer"
-              />
-            </div>
-            <Button
-              onClick={onCreate}
-              disabled={
-                creating || !name || !slug || (path === 'child' && !parentId)
-              }
-            >
-              {creating ? 'Creating…' : 'Create and open builder'}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      {path ? (
+        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+          <div className="space-y-6">
+            {path === 'child' ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    2. Choose a parent
+                  </CardTitle>
+                  <CardDescription>
+                    Select the form this child will inherit from. Maximum depth
+                    is 5 levels.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {parentOptions.length === 0 ? (
+                    <p className="text-muted-foreground text-sm">
+                      No forms available to inherit from yet.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {parentOptions.map((f) => (
+                        <button
+                          key={f.id}
+                          type="button"
+                          disabled={f.disabled}
+                          onClick={() => setParentId(f.id)}
+                          className={cn(
+                            'focus-visible:ring-ring flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+                            parentId === f.id
+                              ? 'border-primary bg-accent/40'
+                              : 'border-border hover:bg-surface-muted/50',
+                          )}
+                          style={{ marginLeft: Math.min(f.depth, 3) * 12 }}
+                        >
+                          <span className="min-w-0">
+                            <span className="flex items-center gap-2">
+                              {f.depth > 0 ? (
+                                <ChevronRight
+                                  className="text-subtle size-3.5"
+                                  aria-hidden
+                                />
+                              ) : null}
+                              <span className="truncate text-sm font-medium">
+                                {f.name}
+                              </span>
+                            </span>
+                            <span className="text-muted-foreground block font-mono text-xs">
+                              {f.slug}
+                            </span>
+                          </span>
+                          <span className="flex shrink-0 items-center gap-2">
+                            <Badge
+                              variant="outline"
+                              dot={false}
+                              className="h-5"
+                            >
+                              Depth {f.depth}
+                            </Badge>
+                            {f.disabled ? (
+                              <span className="text-muted-foreground text-xs">
+                                Max depth reached
+                              </span>
+                            ) : null}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ) : null}
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">
+                  {path === 'child' ? '3. Form details' : '2. Form details'}
+                </CardTitle>
+                <CardDescription>
+                  Name your form and choose its public slug.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="form-name">Name</Label>
+                  <Input
+                    id="form-name"
+                    name="Name"
+                    value={name}
+                    onChange={(e) => onNameChange(e.target.value)}
+                    placeholder="e.g. Frontend Developer"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="form-slug">Slug</Label>
+                  <div className="border-input bg-surface focus-within:ring-ring flex items-center gap-2 rounded-md border px-3 focus-within:ring-2">
+                    <span className="text-muted-foreground shrink-0 text-sm">
+                      formfamily.app/f/
+                    </span>
+                    <Input
+                      id="form-slug"
+                      name="Slug"
+                      value={slug}
+                      onChange={(e) => {
+                        setSlugTouched(true);
+                        setSlug(slugify(e.target.value));
+                      }}
+                      placeholder="frontend-developer"
+                      className="h-9 border-0 px-0 shadow-none focus-visible:ring-0"
+                    />
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    Auto-generated from the name; you can edit it.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 pt-2">
+                  <Button onClick={onCreate} disabled={!canCreate}>
+                    {creating ? 'Creating…' : 'Create and open builder'}
+                  </Button>
+                  {disabledReason && !canCreate ? (
+                    <span className="text-muted-foreground text-sm">
+                      {disabledReason}
+                    </span>
+                  ) : null}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-4">
+            <Card className="sticky top-20">
+              <CardHeader>
+                <CardTitle className="text-base">Summary</CardTitle>
+                <CardDescription>What will be created</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-muted-foreground">Type</span>
+                  <span className="text-foreground text-right font-medium">
+                    {path === 'blank'
+                      ? 'Blank form'
+                      : path === 'template'
+                        ? 'Hiring template'
+                        : 'Child form'}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-muted-foreground">Name</span>
+                  <span className="text-foreground text-right font-medium">
+                    {name.trim() || '—'}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-muted-foreground">Slug</span>
+                  <span className="text-foreground text-right font-mono text-xs">
+                    {slug.trim() || '—'}
+                  </span>
+                </div>
+                {path === 'child' ? (
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-muted-foreground">Parent</span>
+                    <span className="text-foreground text-right font-medium">
+                      {selectedParent?.name || '—'}
+                    </span>
+                  </div>
+                ) : null}
+                {path === 'template' ? (
+                  <div className="border-border bg-surface-muted/50 text-muted-foreground rounded-lg border p-3 text-xs">
+                    Includes logo, heading, about section, and common hiring
+                    fields (name, email, phone, resume, experience, and more).
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

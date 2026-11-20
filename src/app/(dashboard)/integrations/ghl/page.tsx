@@ -37,13 +37,13 @@ import {
 } from '@/store/slices/ghlSlice';
 import type { GhlFieldMappingRecord } from '@/services/ghlRepository';
 import { ErrorState } from '@/components/shared/ScreenStates';
+import { Callout } from '@/components/shared/Callout';
 import { toast } from 'sonner';
 
 function statusBadge(status: GhlFieldMappingRecord['status']) {
-  if (status === 'mapped') return <Badge>mapped</Badge>;
-  if (status === 'suggested')
-    return <Badge variant="secondary">suggested</Badge>;
-  return <Badge variant="outline">unmapped</Badge>;
+  if (status === 'mapped') return <Badge variant="synced">Mapped</Badge>;
+  if (status === 'suggested') return <Badge variant="pending">Suggested</Badge>;
+  return <Badge variant="secondary">Unmapped</Badge>;
 }
 
 export default function GhlIntegrationPage() {
@@ -65,10 +65,6 @@ export default function GhlIntegrationPage() {
   const [saving, setSaving] = useState(false);
 
   const mappings = draftMappings ?? ghl.mappings;
-  const customFieldsById = useMemo(
-    () => new Map(ghl.customFields.map((f) => [f.id, f])),
-    [ghl.customFields],
-  );
 
   const syncSummary = useMemo(() => {
     return forms.map((form) => {
@@ -139,10 +135,12 @@ export default function GhlIntegrationPage() {
   if (!initialized && !error) {
     return (
       <div className="space-y-6" aria-busy="true">
-        <PageHeader title="GHL integration" />
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-72 w-full" />
+        <PageHeader
+          title="GHL integration"
+          description="Connect your location, map fields, and monitor sync health."
+        />
+        <Skeleton className="h-40 w-full rounded-xl" />
+        <Skeleton className="h-72 w-full rounded-xl" />
       </div>
     );
   }
@@ -150,7 +148,10 @@ export default function GhlIntegrationPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <PageHeader title="GHL integration" />
+        <PageHeader
+          title="GHL integration"
+          description="Connect your location, map fields, and monitor sync health."
+        />
         <ErrorState
           title="Could not load GHL integration"
           message={error}
@@ -162,7 +163,10 @@ export default function GhlIntegrationPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="GHL integration" />
+      <PageHeader
+        title="GHL integration"
+        description="Connect your location, map fields, and monitor sync health."
+      />
 
       <Card>
         <CardHeader>
@@ -192,14 +196,14 @@ export default function GhlIntegrationPage() {
               />
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={onValidate}>
-              Validate
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="secondary" onClick={onValidate}>
+              Validate connection
             </Button>
             {ghl.connection.connected ? (
-              <div className="text-sm">
-                <Badge>Connected</Badge>{' '}
-                <span className="text-muted-foreground ml-2">
+              <div className="flex items-center gap-2 text-sm">
+                <Badge variant="synced">Connected</Badge>
+                <span className="text-muted-foreground">
                   {ghl.connection.locationName} ({ghl.connection.locationId})
                 </span>
               </div>
@@ -214,28 +218,6 @@ export default function GhlIntegrationPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Existing GHL custom fields</CardTitle>
-          <CardDescription>
-            Fields pulled from the connected sub-account (mocked).
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {ghl.customFields.map((f) => (
-              <div key={f.id} className="rounded-md border p-2 text-sm">
-                <div className="font-medium">{f.name}</div>
-                <div className="text-muted-foreground font-mono text-xs">
-                  {f.id}
-                  {f.key ? ` • ${f.key}` : ''}
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
           <CardTitle>Field mapping</CardTitle>
           <CardDescription>
             Map library fields to GHL custom fields. Review changes before
@@ -243,15 +225,15 @@ export default function GhlIntegrationPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-            Possible duplicate warning: similar GHL fields detected —{' '}
-            <strong>Expected CTC</strong> and <strong>Expected Salary</strong>.
-            Prefer reusing the existing mapped field to avoid duplicates.
-          </div>
-          <div className="overflow-x-auto">
+          <Callout variant="warning" title="Possible duplicate fields">
+            Similar GHL fields detected — <strong>Expected CTC</strong> and{' '}
+            <strong>Expected Salary</strong>. Prefer reusing the existing mapped
+            field to avoid duplicates.
+          </Callout>
+          <div className="border-border overflow-x-auto rounded-lg border">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="hover:bg-transparent">
                   <TableHead>Library field</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>GHL custom field</TableHead>
@@ -282,7 +264,7 @@ export default function GhlIntegrationPage() {
                             )
                           }
                         >
-                          <SelectTrigger>
+                          <SelectTrigger aria-label={`Map ${m.fieldKey}`}>
                             <SelectValue placeholder="Unmapped" />
                           </SelectTrigger>
                           <SelectContent>
@@ -305,7 +287,7 @@ export default function GhlIntegrationPage() {
                             m.suggestion.ghlCustomFieldId ? (
                               <Button
                                 size="sm"
-                                variant="outline"
+                                variant="secondary"
                                 onClick={() => acceptSuggestion(m.fieldKey)}
                               >
                                 Accept
@@ -330,7 +312,7 @@ export default function GhlIntegrationPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button
-              variant="outline"
+              variant="secondary"
               onClick={() => setReview(true)}
               disabled={!hasUnsaved}
             >
@@ -348,7 +330,7 @@ export default function GhlIntegrationPage() {
               </span>
             ) : null}
             {review && hasUnsaved ? (
-              <span className="text-sm text-green-700">
+              <span className="text-sm text-[#027A48]">
                 Changes reviewed. You can save now.
               </span>
             ) : null}
@@ -358,13 +340,16 @@ export default function GhlIntegrationPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Sync status summary (per form)</CardTitle>
+          <CardTitle>Sync status summary</CardTitle>
+          <CardDescription>
+            Per-form sync outcomes for recent submissions.
+          </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="hover:bg-transparent">
                   <TableHead>Form</TableHead>
                   <TableHead>Synced</TableHead>
                   <TableHead>Pending</TableHead>
@@ -376,10 +361,10 @@ export default function GhlIntegrationPage() {
                 {syncSummary.map((s) => (
                   <TableRow key={s.formId}>
                     <TableCell className="font-medium">{s.name}</TableCell>
-                    <TableCell>{s.synced}</TableCell>
-                    <TableCell>{s.pending}</TableCell>
-                    <TableCell>{s.failed}</TableCell>
-                    <TableCell>{s.total}</TableCell>
+                    <TableCell className="tabular-nums">{s.synced}</TableCell>
+                    <TableCell className="tabular-nums">{s.pending}</TableCell>
+                    <TableCell className="tabular-nums">{s.failed}</TableCell>
+                    <TableCell className="tabular-nums">{s.total}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

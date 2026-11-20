@@ -53,6 +53,14 @@ Part 1 delivered the scaffold, docs, Prisma schema, typed stubs, and placeholder
 
 See `docs/QA_PART2.md` for the itemized Part 2 checklist and results, and `docs/PART3_HANDOFF.md` for migration guidance.
 
+## Part 2.5: Design System and Demo Polish (In Progress / Implemented in this pass)
+
+- **Design system:** tokenized light/dark theme foundation in `globals.css` with `next-themes` integration, Inter/JetBrains Mono fonts, updated core UI primitives and new shared components (status/stat/callout/stepper/avatar/kbd/segmented control/field type icon/legend, upgraded page header and screen states).
+- **Shell/navigation:** redesigned dashboard shell (sidebar/rail, org/user menus, grouped nav, breadcrumbs, command palette, notifications, theme toggle, mobile sheet, reset confirmation flows) and hid Next.js dev indicators.
+- **Correctness/UX fixes:** shared form status helper (never-published => Draft), family graph edge rendering fixes, removal of "Create form" as nav item (route preserved), labeled filters/hierarchy cues/empty-state improvements across key screens, and public/auth/landing/settings/submissions/field-library/GHL visual polish.
+- **Demo/docs:** added `docs/DEMO_SCRIPT.md` and screenshot folders; preserved mock-first constraints, inheritance rules, and existing behavior.
+- **Verification (this pass):** `npm run typecheck`, `npm run lint` (0 errors), `npm run test` (45/45), and `npm run build` pass. `npm run e2e` and a11y/performance screenshot capture were not fully completed in this pass and should be run/validated as follow-up.
+
 ## Part 2: Frontend with Static Data
 
 ### Goals

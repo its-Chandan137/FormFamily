@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useMemo, useState } from 'react';
+import { Search, Plus, Copy } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,6 +37,8 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { bootstrapApp } from '@/store/bootstrap';
 import { createField } from '@/store/slices/fieldsSlice';
 import { EmptyState, ErrorState } from '@/components/shared/ScreenStates';
+import { FieldTypeIcon } from '@/components/shared/FieldTypeIcon';
+import { Callout } from '@/components/shared/Callout';
 import type { FieldDefinition, FieldType } from '@/types';
 import { toast } from 'sonner';
 
@@ -133,12 +136,12 @@ export default function FieldLibraryPage() {
   if (!initialized && !error) {
     return (
       <div className="space-y-6" aria-busy="true">
-        <div className="flex items-center justify-between gap-4">
-          <PageHeader title="Field library" />
-          <Skeleton className="h-9 w-36" />
-        </div>
-        <Skeleton className="h-9 max-w-sm" />
-        <Skeleton className="h-72 w-full" />
+        <PageHeader
+          title="Field library"
+          description="Reusable platform and custom fields for your forms."
+        />
+        <Skeleton className="h-9 max-w-sm rounded-lg" />
+        <Skeleton className="h-72 w-full rounded-xl" />
       </div>
     );
   }
@@ -146,7 +149,10 @@ export default function FieldLibraryPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Field library" />
+        <PageHeader
+          title="Field library"
+          description="Reusable platform and custom fields for your forms."
+        />
         <ErrorState
           title="Could not load field library"
           message={error}
@@ -158,148 +164,187 @@ export default function FieldLibraryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <PageHeader title="Field library" />
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger render={<Button />}>Add custom field</DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add custom field</DialogTitle>
-              <DialogDescription>
-                Create an organisation-specific field. Keys are immutable after
-                creation.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="field-key">Key (lowercase snake_case)</Label>
-                <Input
-                  id="field-key"
-                  value={key}
-                  onChange={(e) => setKey(e.target.value)}
-                  placeholder="e.g. linkedin_url"
-                />
-                {key && !keyValid ? (
-                  <p className="text-destructive text-xs">
-                    Key must be lowercase snake_case (start with a letter).
-                  </p>
-                ) : null}
-                {keyExists ? (
-                  <p className="text-destructive text-xs">
-                    A field with this key already exists.
-                  </p>
-                ) : null}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="field-label">Label</Label>
-                <Input
-                  id="field-label"
-                  value={label}
-                  onChange={(e) => setLabel(e.target.value)}
-                  placeholder="LinkedIn URL"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Type</Label>
-                <Select
-                  value={type}
-                  onValueChange={(v) => setType((v as FieldType) ?? 'text')}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fieldTypes.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {t}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {suggestions.length > 0 ? (
-                <div className="rounded-md border p-3">
-                  <div className="mb-2 text-sm font-medium">
-                    Similar existing fields
-                  </div>
-                  <ul className="text-muted-foreground space-y-1 text-sm">
-                    {suggestions.map((s) => (
-                      <li key={s.id}>
-                        <span className="font-mono text-xs">{s.key}</span> —{' '}
-                        {s.label} ({s.type})
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="text-muted-foreground mt-2 text-xs">
-                    Consider reusing an existing field before creating a new
-                    one.
-                  </p>
+      <PageHeader
+        title="Field library"
+        description="Reusable platform and custom fields for your forms."
+        actions={
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger render={<Button />}>
+              <Plus className="size-4" aria-hidden /> Add custom field
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add custom field</DialogTitle>
+                <DialogDescription>
+                  Create an organisation-specific field. Keys are immutable
+                  after creation.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="field-key">Key (lowercase snake_case)</Label>
+                  <Input
+                    id="field-key"
+                    value={key}
+                    onChange={(e) => setKey(e.target.value)}
+                    placeholder="e.g. linkedin_url"
+                  />
+                  {key && !keyValid ? (
+                    <p className="text-destructive text-xs">
+                      Key must be lowercase snake_case (start with a letter).
+                    </p>
+                  ) : null}
+                  {keyExists ? (
+                    <p className="text-destructive text-xs">
+                      A field with this key already exists.
+                    </p>
+                  ) : null}
                 </div>
-              ) : null}
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={onCreate}
-                disabled={!keyValid || !label || keyExists}
-              >
-                Create field
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+                <div className="space-y-2">
+                  <Label htmlFor="field-label">Label</Label>
+                  <Input
+                    id="field-label"
+                    value={label}
+                    onChange={(e) => setLabel(e.target.value)}
+                    placeholder="LinkedIn URL"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Type</Label>
+                  <Select
+                    value={type}
+                    onValueChange={(v) => setType((v as FieldType) ?? 'text')}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fieldTypes.map((t) => (
+                        <SelectItem key={t} value={t}>
+                          {t}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {suggestions.length > 0 ? (
+                  <Callout variant="info" title="Similar existing fields">
+                    <ul className="mt-1 space-y-1 text-sm">
+                      {suggestions.map((s) => (
+                        <li key={s.id}>
+                          <span className="font-mono text-xs">{s.key}</span> —{' '}
+                          {s.label} ({s.type})
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-2 text-xs opacity-90">
+                      Consider reusing an existing field before creating a new
+                      one.
+                    </p>
+                  </Callout>
+                ) : null}
+              </div>
+              <DialogFooter>
+                <Button variant="secondary" onClick={() => setOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={onCreate}
+                  disabled={!keyValid || !label || keyExists}
+                >
+                  Create field
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        }
+      />
 
-      <div className="max-w-sm">
+      <div className="relative max-w-sm">
+        <Search
+          className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+          aria-hidden
+        />
         <Input
           placeholder="Search fields..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          className="pl-9"
         />
       </div>
 
-      <Card>
-        <CardHeader>
+      <Card className="overflow-hidden p-0">
+        <CardHeader className="border-border border-b px-5 py-4">
           <CardTitle className="text-base">Fields</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {filtered.length === 0 ? (
-            <EmptyState
-              title="No fields found"
-              description={
-                fields.length === 0
-                  ? 'No fields in the library yet.'
-                  : 'Try adjusting your search.'
-              }
-            />
+            <div className="p-6">
+              <EmptyState
+                title="No fields found"
+                description={
+                  fields.length === 0
+                    ? 'No fields in the library yet.'
+                    : 'Try adjusting your search.'
+                }
+              />
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead>Field</TableHead>
                     <TableHead>Key</TableHead>
-                    <TableHead>Label</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Scope</TableHead>
+                    <TableHead>Source</TableHead>
                     <TableHead>Used in</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.map((f) => (
                     <TableRow key={f.id}>
-                      <TableCell className="font-mono text-xs">
-                        {f.key}
-                      </TableCell>
-                      <TableCell>{f.label}</TableCell>
                       <TableCell>
-                        <Badge variant="secondary">{f.type}</Badge>
+                        <div className="flex items-center gap-2">
+                          <span className="bg-surface-muted flex size-7 items-center justify-center rounded-md">
+                            <FieldTypeIcon type={f.type} className="size-3.5" />
+                          </span>
+                          <div>
+                            <div className="font-medium">{f.label}</div>
+                            <div className="text-muted-foreground text-xs capitalize">
+                              {f.type}
+                            </div>
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell>
-                        {f.orgId ? 'Organisation' : 'Platform'}
+                        <div className="inline-flex items-center gap-1.5">
+                          <code className="bg-surface-muted text-foreground rounded px-1.5 py-0.5 font-mono text-xs">
+                            {f.key}
+                          </code>
+                          <button
+                            type="button"
+                            className="text-muted-foreground hover:bg-surface-muted hover:text-foreground inline-flex size-6 items-center justify-center rounded"
+                            onClick={() => {
+                              void navigator.clipboard.writeText(f.key);
+                              toast.success('Key copied');
+                            }}
+                            aria-label={`Copy key ${f.key}`}
+                          >
+                            <Copy className="size-3.5" />
+                          </button>
+                        </div>
                       </TableCell>
-                      <TableCell>{usageCount.get(f.key) ?? 0} forms</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={f.orgId ? 'inherit' : 'secondary'}
+                          dot={false}
+                        >
+                          {f.orgId ? 'Custom' : 'Platform'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground tabular-nums">
+                        {usageCount.get(f.key) ?? 0} forms
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

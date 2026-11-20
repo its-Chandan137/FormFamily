@@ -4,6 +4,18 @@ async function resetDemo(page: Page) {
   await page.goto('/settings');
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
   await page.getByRole('button', { name: 'Reset demo data' }).click();
+  const confirm = page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: /^Reset$/ });
+  if (await confirm.isVisible().catch(() => false)) {
+    await confirm.click();
+  } else {
+    // fallback: dialog may be role dialog
+    const confirm2 = page
+      .getByRole('dialog')
+      .getByRole('button', { name: /^Reset$/ });
+    if (await confirm2.isVisible().catch(() => false)) await confirm2.click();
+  }
   await expect(
     page.getByText(/Demo data (has been )?reset/i).first(),
   ).toBeVisible();

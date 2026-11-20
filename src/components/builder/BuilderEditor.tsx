@@ -858,7 +858,7 @@ export function BuilderEditor({ formId }: { formId: string }) {
                   <Badge variant="outline">{getFormStatusLabel(status)}</Badge>
                 );
               }
-              return <Badge>Published</Badge>;
+              return <Badge>Up to date</Badge>;
             })()}
             <AutosaveIndicator
               status={builder.autosaveStatus}

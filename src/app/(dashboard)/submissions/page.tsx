@@ -1,7 +1,8 @@
 ﻿'use client';
 
 import { useMemo, useState } from 'react';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
+import { RotateCcw, Search } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,27 +35,24 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { bootstrapApp } from '@/store/bootstrap';
 import { retrySubmissionSync } from '@/store/slices/submissionsSlice';
 import { EmptyState, ErrorState } from '@/components/shared/ScreenStates';
+import { Avatar } from '@/components/shared/Avatar';
 import type { ResolvedForm, Submission, SyncStatus } from '@/types';
 import { toast } from 'sonner';
 
 function SyncBadge({ status }: { status: SyncStatus }) {
   const variant =
     status === 'synced'
-      ? 'default'
+      ? 'synced'
       : status === 'pending'
-        ? 'secondary'
-        : 'destructive';
-  return <Badge variant={variant}>{status}</Badge>;
-}
-
-function getVersionSnapshot(
-  forms: ReturnType<typeof useAppSelector> extends (...args: never[]) => infer R
-    ? any
-    : never,
-  submission: Submission,
-): { resolved: ResolvedForm | null; versionNumber?: number } {
-  // not used; helper below instead
-  return { resolved: null };
+        ? 'pending'
+        : 'failed';
+  const label =
+    status === 'synced'
+      ? 'Synced'
+      : status === 'pending'
+        ? 'Pending'
+        : 'Failed';
+  return <Badge variant={variant}>{label}</Badge>;
 }
 
 export default function SubmissionsPage() {
@@ -129,7 +127,9 @@ export default function SubmissionsPage() {
     return Array.from(byForm.entries()).map(([formId, items]) => ({
       formId,
       formName: formsById.get(formId)?.name ?? formId,
-      items,
+      items: items.sort(
+        (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt),
+      ),
     }));
   }, [filtered, formsById]);
 
@@ -140,51 +140,69 @@ export default function SubmissionsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Submissions" />
-      <div className="flex flex-col gap-3 md:flex-row md:items-center">
-        <Input
-          placeholder="Search submissions..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="md:max-w-sm"
-        />
-        <Select
-          value={formFilter}
-          onValueChange={(v) => setFormFilter(v ?? 'all')}
-        >
-          <SelectTrigger className="w-full md:w-56">
-            <SelectValue placeholder="Filter by form" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All forms</SelectItem>
-            {forms.map((f) => (
-              <SelectItem key={f.id} value={f.id}>
-                {f.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={statusFilter}
-          onValueChange={(v) => setStatusFilter(v ?? 'all')}
-        >
-          <SelectTrigger className="w-full md:w-44">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="synced">Synced</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="failed">Failed</SelectItem>
-          </SelectContent>
-        </Select>
+      <PageHeader
+        title="Submissions"
+        description="Review applicant responses and sync status."
+      />
+
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="relative w-full lg:max-w-sm">
+          <Search
+            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+            aria-hidden
+          />
+          <Input
+            placeholder="Search submissions..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground text-sm">Form</span>
+          <Select
+            value={formFilter}
+            onValueChange={(v) => setFormFilter(v ?? 'all')}
+          >
+            <SelectTrigger className="w-[220px]" aria-label="Form filter">
+              <SelectValue placeholder="All forms" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All forms</SelectItem>
+              {forms.map((f) => (
+                <SelectItem key={f.id} value={f.id}>
+                  {f.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground text-sm">Sync</span>
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v ?? 'all')}
+          >
+            <SelectTrigger
+              className="w-[170px]"
+              aria-label="Sync status filter"
+            >
+              <SelectValue placeholder="All statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="synced">Synced</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="failed">Failed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {!initialized && !error ? (
         <div className="space-y-3" aria-busy="true">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-48 w-full" />
-          <Skeleton className="h-48 w-full" />
+          <Skeleton className="h-10 w-full rounded-lg" />
+          <Skeleton className="h-48 w-full rounded-xl" />
         </div>
       ) : error ? (
         <ErrorState
@@ -204,75 +222,115 @@ export default function SubmissionsPage() {
       ) : (
         <div className="space-y-6">
           {grouped.map((group) => (
-            <Card key={group.formId}>
-              <CardHeader>
+            <Card key={group.formId} className="overflow-hidden p-0">
+              <CardHeader className="border-border flex-row items-center justify-between border-b px-5 py-4">
                 <CardTitle className="text-base">{group.formName}</CardTitle>
+                <span className="text-muted-foreground text-xs tabular-nums">
+                  {group.items.length} submission
+                  {group.items.length === 1 ? '' : 's'}
+                </span>
               </CardHeader>
-              <CardContent className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Submitted</TableHead>
-                      <TableHead>Version</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Applicant</TableHead>
-                      <TableHead></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {group.items.map((s) => {
-                      const v = formsById
-                        .get(s.formId)
-                        ?.versions.find((ver) => ver.id === s.formVersionId);
-                      const email = String(
-                        (s.answers as Record<string, unknown>).email ?? '',
-                      );
-                      const name = [
-                        s.answers && (s.answers as any).first_name,
-                        s.answers && (s.answers as any).last_name,
-                      ]
-                        .filter(Boolean)
-                        .join(' ');
-                      return (
-                        <TableRow
-                          key={s.id}
-                          className="cursor-pointer"
-                          onClick={() => setSelectedId(s.id)}
-                        >
-                          <TableCell>
-                            {format(new Date(s.createdAt), 'MMM d, yyyy HH:mm')}
-                          </TableCell>
-                          <TableCell>
-                            {v ? `v${v.versionNumber}` : s.formVersionId}
-                          </TableCell>
-                          <TableCell>
-                            <SyncBadge status={s.ghlSyncStatus} />
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-medium">{name || '—'}</div>
-                            <div className="text-muted-foreground text-xs">
-                              {email || '—'}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {s.ghlSyncStatus === 'failed' ? (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  void onRetry(s.id);
-                                }}
-                              >
-                                Retry sync
-                              </Button>
-                            ) : null}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead>Applicant</TableHead>
+                        <TableHead>Form</TableHead>
+                        <TableHead>Version</TableHead>
+                        <TableHead>Submitted</TableHead>
+                        <TableHead>Sync status</TableHead>
+                        <TableHead className="w-28">
+                          <span className="sr-only">Actions</span>
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {group.items.map((s) => {
+                        const v = formsById
+                          .get(s.formId)
+                          ?.versions.find((ver) => ver.id === s.formVersionId);
+                        const email = String(
+                          (s.answers as Record<string, unknown>).email ?? '',
+                        );
+                        const name =
+                          [
+                            s.answers && (s.answers as any).first_name,
+                            s.answers && (s.answers as any).last_name,
+                          ]
+                            .filter(Boolean)
+                            .join('') ||
+                          String((s.answers as any).first_name ?? '') +
+                            ' ' +
+                            String((s.answers as any).last_name ?? '');
+                        const displayName =
+                          [
+                            (s.answers as any).first_name,
+                            (s.answers as any).last_name,
+                          ]
+                            .filter(Boolean)
+                            .join(' ') ||
+                          email ||
+                          'Applicant';
+                        return (
+                          <TableRow
+                            key={s.id}
+                            className="cursor-pointer"
+                            onClick={() => setSelectedId(s.id)}
+                          >
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Avatar name={displayName} size="sm" />
+                                <div className="min-w-0">
+                                  <div className="truncate font-medium">
+                                    {displayName}
+                                  </div>
+                                  <div className="text-muted-foreground truncate text-xs">
+                                    {email || '—'}
+                                  </div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" dot={false}>
+                                {group.formName}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground font-mono text-xs">
+                              {v ? `v${v.versionNumber}` : s.formVersionId}
+                            </TableCell>
+                            <TableCell
+                              className="text-muted-foreground"
+                              title={format(new Date(s.createdAt), 'PPpp')}
+                            >
+                              {formatDistanceToNow(new Date(s.createdAt), {
+                                addSuffix: true,
+                              })}
+                            </TableCell>
+                            <TableCell>
+                              <SyncBadge status={s.ghlSyncStatus} />
+                            </TableCell>
+                            <TableCell
+                              className="text-right"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {s.ghlSyncStatus === 'failed' ? (
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => void onRetry(s.id)}
+                                >
+                                  <RotateCcw className="size-3.5" aria-hidden />{' '}
+                                  Retry
+                                </Button>
+                              ) : null}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -299,7 +357,7 @@ export default function SubmissionsPage() {
                 </SheetDescription>
               </SheetHeader>
               <div className="mt-4 space-y-4 p-4 pt-0">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <SyncBadge status={selected.ghlSyncStatus} />
                   {selected.ghlSyncError ? (
                     <span className="text-destructive text-sm">
@@ -312,11 +370,14 @@ export default function SubmissionsPage() {
                 </div>
                 <div className="space-y-3">
                   {answerRows.map((row) => (
-                    <div key={row.key} className="rounded-md border p-3">
+                    <div
+                      key={row.key}
+                      className="border-border rounded-lg border p-3"
+                    >
                       <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                         {row.label}
                       </div>
-                      <div className="mt-1 text-sm break-words">
+                      <div className="text-foreground mt-1 text-sm break-words">
                         {typeof row.value === 'boolean'
                           ? row.value
                             ? 'Yes'
@@ -335,9 +396,10 @@ export default function SubmissionsPage() {
                 {selected.ghlSyncStatus === 'failed' ? (
                   <Button
                     onClick={() => void onRetry(selected.id)}
-                    variant="outline"
+                    variant="secondary"
                   >
-                    Retry sync (mock)
+                    <RotateCcw className="size-4" aria-hidden /> Retry sync
+                    (mock)
                   </Button>
                 ) : null}
               </div>
