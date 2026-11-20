@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FormFamily
 
-## Getting Started
+Multi-tenant web platform where companies create dynamic forms with a drag-and-drop builder and connect them to GoHighLevel (GHL), a CRM.
 
-First, run the development server:
+## Project Structure
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+This project is Part 1 of a 3-part development process:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Part 1**: Project setup, types, configuration, stubs, and documentation
+- **Part 2**: Frontend with static data and mock API responses
+- **Part 3**: Real backend, authentication, and GHL integration
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Current Status
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Part 1 Complete**: Project bootstrapped with all required packages, full folder structure, typed stubs, Prisma schema, and documentation.
 
-## Learn More
+## Technologies
 
-To learn more about Next.js, take a look at the following resources:
+- Next.js (App Router) with React and TypeScript
+- Tailwind CSS with shadcn/ui
+- @reduxjs/toolkit for state management
+- @dnd-kit for drag-and-drop
+- @xyflow/react for family graph
+- Prisma with PostgreSQL
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `pnpm dev` - Development server
+- `pnpm build` - Build for production
+- `pnpm start` - Production server
+- `pnpm lint` - ESLint
+- `pnpm lint:fix` - ESLint with fixes
+- `pnpm typecheck` - TypeScript check
+- `pnpm format` - Prettier format
+- `pnpm test` - Vitest tests
+- `pnpm test:watch` - Vitest watch mode
+- `pnpm db:generate` - Generate Prisma client
+- `pnpm db:migrate` - Run Prisma migrations
+- `pnpm db:studio` - Open Prisma Studio
+- `pnpm db:seed` - Run seed script
 
-## Deploy on Vercel
+## TODO (Part 2)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Implement real drag-and-drop builder
+- Build family graph visualization
+- Create form public page
+- Implement dashboard with all forms
+- Add field library
+- Build GHL connection and mapping screens
+- Implement submission management
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## TODO (Part 3)
+
+- Implement Redux state wiring
+- Add API routes for real backend
+- Implement authentication
+- Add queue library and storage SDK
+- Integrate with real GHL API

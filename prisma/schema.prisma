@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  owner
+  admin
+  editor
+}
+
+enum VersionStatus {
+  draft
+  published
+}
+
+enum AuthType {
+  token
+  oauth
+}
+
+enum SyncStatus {
+  synced
+  pending
+  failed
+}
+
+enum GhlMappingStatus {
+  active
+  inactive
+}
+
+model Organization {
+  id               String            @id @default(cuid())
+  name             String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  memberships      Membership[]
+  fieldDefinitions FieldDefinition[]
+  forms            Form[]
+  ghlConnections   GhlConnection[]
+  ghlFieldMappings GhlFieldMapping[]
+  submissions      Submission[]
+  auditLogs        AuditLog[]
+}
+
+model User {
+  id          String       @id @default(cuid())
+  email       String       @unique
+  name        String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  memberships Membership[]
+  auditLogs   AuditLog[]
+}
+
+model Membership {
+  id        String       @id @default(cuid())
+  userId    String
+  orgId     String
+  role      Role
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, orgId])
+  @@index([orgId])
+}
+
+model FieldDefinition {
+  id         String        @id @default(cuid())
+  orgId      String?
+  key        String
+  label      String
+  type       String
+  options    Json?
+  validation Json?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  org        Organization? @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, key])
+  @@index([orgId])
+}
+
+model Form {
+  id                 String        @id @default(cuid())
+  orgId              String
+  parentFormId       String?
+  name               String
+  slug               String        @unique
+  publishedVersionId String?       @unique
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  org                Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  parent             Form?         @relation("FormFamily", fields: [parentFormId], references: [id], onDelete: SetNull)
+  children           Form[]        @relation("FormFamily")
+  versions           FormVersion[] @relation("FormVersions")
+  publishedVersion   FormVersion?  @relation("PublishedVersion", fields: [publishedVersionId], references: [id], onDelete: SetNull)
+  submissions        Submission[]
+
+  @@index([orgId, parentFormId])
+}
+
+model FormVersion {
+  id               String        @id @default(cuid())
+  formId           String
+  versionNumber    Int
+  status           VersionStatus
+  content          Json
+  resolvedSnapshot Json?
+  publishedAt      DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  form             Form          @relation("FormVersions", fields: [formId], references: [id], onDelete: Cascade)
+  publishedFor     Form?         @relation("PublishedVersion")
+  submissions      Submission[]
+
+  @@unique([formId, versionNumber])
+  @@index([formId])
+}
+
+model GhlConnection {
+  id                   String       @id @default(cuid())
+  orgId                String
+  locationId           String
+  authType             AuthType
+  encryptedCredentials String
+  lastSyncedAt         DateTime?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  org                  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
+
+model GhlFieldMapping {
+  id               String           @id @default(cuid())
+  orgId            String
+  fieldKey         String
+  ghlCustomFieldId String
+  status           GhlMappingStatus @default(active)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  org              Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, fieldKey])
+  @@index([orgId])
+}
+
+model Submission {
+  id            String       @id @default(cuid())
+  orgId         String
+  formId        String
+  formVersionId String
+  answers       Json
+  ghlSyncStatus SyncStatus   @default(pending)
+  ghlContactId  String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  org           Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  form          Form         @relation(fields: [formId], references: [id], onDelete: Cascade)
+  formVersion   FormVersion  @relation(fields: [formVersionId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, formId, createdAt])
+}
+
+model AuditLog {
+  id         String       @id @default(cuid())
+  orgId      String
+  userId     String?
+  action     String
+  entityType String
+  entityId   String
+  meta       Json?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user       User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([orgId, createdAt])
+}
