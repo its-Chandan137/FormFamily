@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { bootstrapApp } from '@/store/bootstrap';
 import { ErrorState } from '@/components/shared/ScreenStates';
+import { getFormStatus } from '@/lib/forms';
 
 export default function DashboardPage() {
   const dispatch = useAppDispatch();
@@ -32,7 +33,7 @@ export default function DashboardPage() {
 
   const needsAttention: { label: string; href: string; detail: string }[] = [];
   for (const f of forms) {
-    if (f.draft) {
+    if (getFormStatus(f) === 'unpublished_changes') {
       needsAttention.push({
         label: f.name,
         href: `/forms/${f.id}/edit`,

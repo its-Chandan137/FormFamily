@@ -46,6 +46,7 @@ import { CreateChildDialog } from '@/components/family/CreateChildDialog';
 import { DetachDialog } from '@/components/family/DetachDialog';
 import { DeleteFormDialog } from '@/components/family/DeleteFormDialog';
 import { EmptyState, ErrorState } from '@/components/shared/ScreenStates';
+import { getFormStatus, getFormStatusLabel } from '@/lib/forms';
 import { toast } from 'sonner';
 import type { FormRecord } from '@/types';
 
@@ -85,9 +86,10 @@ export default function FormsPage() {
         !f.slug.toLowerCase().includes(q)
       )
         return false;
-      if (statusFilter === 'published' && !f.publishedVersionId) return false;
-      if (statusFilter === 'draft' && !f.draft) return false;
-      if (statusFilter === 'unpublished' && !(f.draft && f.publishedVersionId))
+      const status = getFormStatus(f);
+      if (statusFilter === 'published' && status !== 'published') return false;
+      if (statusFilter === 'draft' && status !== 'draft') return false;
+      if (statusFilter === 'unpublished' && status !== 'unpublished_changes')
         return false;
       return true;
     });
@@ -115,10 +117,12 @@ export default function FormsPage() {
   };
 
   const statusBadge = (f: FormRecord) => {
-    if (f.draft && f.publishedVersionId)
-      return <Badge variant="secondary">Unpublished changes</Badge>;
-    if (f.publishedVersionId) return <Badge>Published</Badge>;
-    return <Badge variant="outline">Draft</Badge>;
+    const status = getFormStatus(f);
+    const label = getFormStatusLabel(status);
+    if (status === 'unpublished_changes')
+      return <Badge variant="secondary">{label}</Badge>;
+    if (status === 'published') return <Badge>{label}</Badge>;
+    return <Badge variant="outline">{label}</Badge>;
   };
 
   if (!initialized && !error) {

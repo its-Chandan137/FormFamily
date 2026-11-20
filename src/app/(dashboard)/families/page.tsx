@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ReactFlow,
   Background,
@@ -41,6 +41,8 @@ import {
   getAncestors,
   getDescendants,
   getDraftResolutionChain,
+  getFormStatus,
+  getFormStatusLabel,
   resolveForm,
 } from '@/lib/forms';
 import type { FormRecord } from '@/types';
@@ -74,12 +76,7 @@ function layout(nodes: Node[], edges: Edge[], direction: 'LR' | 'TB') {
 
 function FormNode({ data }: { data: any }) {
   const f: FormRecord = data.form;
-  const status =
-    f.draft && f.publishedVersionId
-      ? 'Unpublished changes'
-      : f.publishedVersionId
-        ? 'Published'
-        : 'Draft';
+  const status = getFormStatusLabel(getFormStatus(f));
   const dimmed = data.dimmed as boolean | undefined;
   return (
     <div
@@ -203,6 +200,8 @@ export default function FamiliesPage() {
       for (const d of getDescendants(forms as any, hoveredId))
         highlightSet.add(d);
     }
+    const targetPos = direction === 'LR' ? Position.Left : Position.Top;
+    const sourcePos = direction === 'LR' ? Position.Right : Position.Bottom;
     const nodes: Node[] = visibleForms.map((f) => {
       const childCount = forms.filter((x) => x.parentFormId === f.id).length;
       let inheritedCount = 0;
@@ -233,8 +232,12 @@ export default function FamiliesPage() {
           onSelect: setSelectedId,
           onCreateChild: setCreateChildFor,
           dimmed,
+          targetPosition: targetPos,
+          sourcePosition: sourcePos,
         },
         position: { x: 0, y: 0 },
+        targetPosition: targetPos,
+        sourcePosition: sourcePos,
       };
     });
     const edges: Edge[] = visibleForms
@@ -250,8 +253,12 @@ export default function FamiliesPage() {
           id: `${f.parentFormId}-${f.id}`,
           source: f.parentFormId!,
           target: f.id,
+          type: 'smoothstep',
           markerEnd: { type: MarkerType.ArrowClosed },
-          style: dimmed ? { opacity: 0.15 } : undefined,
+          style: {
+            strokeWidth: 1.5,
+            ...(dimmed ? { opacity: 0.15 } : { opacity: 1 }),
+          },
           animated: hoveredId ? !dimmed : false,
         };
       });
@@ -261,8 +268,7 @@ export default function FamiliesPage() {
   const [nodes, setNodes, onNodesChange] = useNodesState(layoutedNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutedEdges);
 
-  // sync when computed changes
-  useMemo(() => {
+  useEffect(() => {
     setNodes(layoutedNodes);
     setEdges(layoutedEdges);
   }, [layoutedNodes, layoutedEdges, setNodes, setEdges]);

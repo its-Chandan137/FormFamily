@@ -47,6 +47,8 @@ import {
   diffResolvedForms,
   findPublishKeyConflicts,
   getDraftResolutionChain,
+  getFormStatus,
+  getFormStatusLabel,
   getPublishedContent,
   publishFormWithPropagation,
   resolveForm,
@@ -842,11 +844,22 @@ export function BuilderEditor({ formId }: { formId: string }) {
           <div className="text-muted-foreground text-xs">Builder</div>
           <h1 className="text-xl font-semibold">{form.name}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-2">
-            {form.draft ? (
-              <Badge variant="secondary">Unpublished changes</Badge>
-            ) : (
-              <Badge>Up to date</Badge>
-            )}
+            {(() => {
+              const status = getFormStatus(form);
+              if (status === 'unpublished_changes') {
+                return (
+                  <Badge variant="secondary">
+                    {getFormStatusLabel(status)}
+                  </Badge>
+                );
+              }
+              if (status === 'draft') {
+                return (
+                  <Badge variant="outline">{getFormStatusLabel(status)}</Badge>
+                );
+              }
+              return <Badge>Published</Badge>;
+            })()}
             <AutosaveIndicator
               status={builder.autosaveStatus}
               lastSavedAt={builder.lastSavedAt}

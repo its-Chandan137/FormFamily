@@ -42,3 +42,5 @@ export {
   resolveWithContent,
 } from './publish-flow';
 export type { KeyConflict } from './publish-flow';
+export { getFormStatus, getFormStatusLabel, isNeverPublished } from './status';
+export type { FormStatus } from './status';
