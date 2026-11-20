@@ -7,6 +7,7 @@ export interface Submission {
   formVersionId: string;
   answers: Record<string, unknown>;
   ghlSyncStatus: SyncStatus;
+  ghlSyncError?: string | null;
   ghlContactId: string | null;
   createdAt: Date | string;
 }

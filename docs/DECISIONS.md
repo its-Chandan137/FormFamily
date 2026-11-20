@@ -674,8 +674,25 @@ This document records the key architectural and technical decisions made during 
 - Reduced ambiguity
 - Faster development
 
+## Part 2 Decisions / Adjustments
+
+- **Mock-first architecture**: introduced `src/services/*` repository interfaces + in-memory async implementations (300–600ms delay) and a Redux client store with thunks/selectors as the data source for the UI. This keeps Part 3 swap (API/RTK Query/Prisma/GHL) localized to services/thunks.
+- **Persistence**: added a single `src/lib/persistence.ts` helper and versioned localStorage key (`PERSISTENCE_KEY`) to persist demo state across refresh; added Reset demo data (topbar + settings).
+- **Anchor semantics**: added `START_ANCHOR = '__start__'` constant (`insertAfter: null` = end, `START_ANCHOR` = top) and documented it; root items persist anchors for a uniform model.
+- **Type additions (Part 2)**: added `FormRecord` for in-memory form state (versions + draft), propagated `validation` to `OwnField`/`ResolvedField` for schema/renderer support, and added optional `ghlSyncError` on submissions for mocked failure messages.
+- **Pure logic API notes**: `snapshotInherited` implemented as `snapshotInherited(chain, formIds)` (takes resolved chain context) to produce a standalone snapshot; added chain/publish helpers and diff helper under `src/lib/forms`. All `src/lib/forms` tests are real and passing.
+- **UI/primitives**: followed generated shadcn/ui base-ui component APIs (e.g. no Radix `asChild` assumptions) and kept business logic in `src/lib`/store/services.
+- **Scope**: no database, auth, queues, file/object storage, or GHL network calls added; Part 1 API route stubs left in place.
+
+## Part 2b Decisions / Adjustments
+
+- **Builder architecture:** refactored builder into modular components with `builderSlice` owning draft history (`past/present/future`, capped/coalesced edits, reset on form switch/publish) and UI state (selection, preview mode, autosave status/error). DnD implemented with `@dnd-kit` sensors/collision/overlay and explicit slot-based insertion (`START_ANCHOR`/`insertAfter`) to preserve anchor semantics.
+- **Rich text and sanitization:** adopted Tiptap (`@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-link`) for builder about/richtext editing and added `sanitizeHtml` (`isomorphic-dompurify`) for safe public/applicant rendering of settings/about and richtext HTML; unit-tested script/inline-handler stripping.
+- **Versioning/publish behavior:** extended diff/chain/publish helpers to support described impact and version-history comparisons and deterministic version identifiers in mock publish flow; conflict merge/publish orchestration remains mock-first via repositories + Redux while preserving documented inheritance rules.
+- **Quality/tooling:** restored stricter linting in targeted core paths (including `@typescript-eslint/no-explicit-any` enforcement in core library/store/service/type areas) and fixed hook-related issues; added Playwright (`@playwright/test`, Chromium) e2e suite for required demo flows. Remaining lint warnings (outside strict-failure scope) were not mass-suppressed.
+- **Screen states and resilience:** standardized loading/empty/error-with-retry UI patterns (shared components) across app screens and added bootstrap load-error handling/retry in UI state/store flow; mock autosave supports a debug failure flag to exercise retry UX.
+- **No rule changes:** `docs/INHERITANCE_RULES.md` and core inheritance/publish/versioning semantics were not changed; implementation choices align existing rules with Part 2b UX requirements.
+
 ## Summary
 
-These decisions reflect a balance between technical excellence, practical considerations, and future requirements. Each decision was made with careful consideration of trade-offs and impact on the overall project. The goal is to create a robust, maintainable, and extensible application that meets all requirements while being developer-friendly and secure.
-
-The decisions provide a solid foundation for the FormFamily application, enabling iterative development and ensuring quality throughout the development process.
+These decisions reflect a balance between technical excellence, practical considerations, and future requirements. Part 2/2b deliver a demo-ready mock-first frontend with pure, testable domain logic, stronger builder UX, and a clear path to Part 3 backend/GHL integration.

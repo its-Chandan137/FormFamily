@@ -512,6 +512,18 @@ Organization
    CREATE INDEX idx_memberships_user_org ON memberships(user_id, org_id);
    ```
 
+## Part 2 Client/Runtime Types (in-memory)
+
+Part 2 adds/extends TypeScript types used by the mock-first frontend (repositories, Redux store, resolver, renderer):
+
+- **`OwnField` / `LayoutElement` anchors**: `insertAfter: string | null` where `null` = end of form and `START_ANCHOR` (`'__start__'`) = top. Roots persist anchors for a uniform model.
+- **`OwnField` / `ResolvedField`**: include optional `validation?: FieldValidation` (propagated through resolution/snapshot/schema building).
+- **`FormRecord`** (extends `Form`): `{ versions: FormVersion[]; draft: FormContent | null; createdAt: string; updatedAt: string }` used in in-memory repositories/store and persisted demo state.
+- **`Submission`**: includes optional `ghlSyncError?: string | null` for mocked failure messages.
+- **`FormVersion.resolvedSnapshot`**: stores the resolved form for published versions (served by public form in Part 2).
+
+See `src/types/*` and `src/lib/forms/*` for the authoritative implementations used in Part 2.
+
 ## JSONB Usage
 
 ### FormContent Storage

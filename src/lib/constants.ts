@@ -4,6 +4,15 @@ export const APP_NAME = 'FormFamily';
 
 export const MAX_FAMILY_DEPTH = 5;
 
+/**
+ * Anchor token for placing an item at the very top of the form.
+ * `insertAfter: null` means append to the end of the form.
+ * Every item (including root items) persists an anchor so the model is uniform.
+ */
+export const START_ANCHOR = '__start__' as const;
+
+export const PERSISTENCE_KEY = 'formfamily-demo-state-v1';
+
 export const ROUTES = {
   home: '/',
   dashboard: '/dashboard',

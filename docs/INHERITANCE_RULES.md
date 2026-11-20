@@ -140,7 +140,18 @@ interface FormContent {
 
 ### Anchor-Based Ordering
 
-Each item has an `insertAfter` anchor (field key or element ID):
+Ordering uses anchors, not absolute positions.
+
+- The root defines the base order. **In the root form, every item is own. Persist anchors there too, so the model is uniform.**
+- Every item a descendant adds stores `insertAfter` (the key of a field or the id of an element).
+- `insertAfter: null` means the end of the form.
+- `START_ANCHOR` (`'__start__'`, exported as a constant in code) means the very top of the form.
+- If the parent adds an item in the middle, it appears there, and the child's own items stay after their anchors.
+- Hidden fields keep their position, so unhiding restores the layout.
+- If an anchor is deleted by the parent, the child's item falls back to the end of its section.
+- Items sharing an anchor keep their relative order.
+
+Example:
 
 ```
 Root: [field1, field2, field3]
@@ -148,8 +159,6 @@ Child: [field4] (insertAfter: 'field2')
 
 Result: [field1, field2, field4, field3]
 ```
-
-If an anchor is deleted by the parent, the child's item falls back to the end of its section.
 
 ## API Operations
 

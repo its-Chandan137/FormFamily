@@ -15,6 +15,19 @@ const eslintConfig = defineConfig([
           caughtErrorsIgnorePattern: '^_',
         },
       ],
+      '@typescript-eslint/no-explicit-any': 'warn',
+      'react-hooks/set-state-in-effect': 'error',
+    },
+  },
+  {
+    files: [
+      'src/lib/**/*.{ts,tsx}',
+      'src/store/**/*.{ts,tsx}',
+      'src/services/**/*.{ts,tsx}',
+      'src/types/**/*.{ts,tsx}',
+    ],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'error',
     },
   },
   // Override default ignores of eslint-config-next.

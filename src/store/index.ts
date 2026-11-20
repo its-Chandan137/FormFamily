@@ -1,40 +1,35 @@
-// Redux store configuration
 import { configureStore } from '@reduxjs/toolkit';
-import { useDispatch, useSelector } from 'react-redux';
-import type { TypedUseSelectorHook } from 'react-redux';
+import builderReducer from './slices/builderSlice';
+import formsReducer from './slices/formsSlice';
+import familyReducer from './slices/familySlice';
+import uiReducer from './slices/uiSlice';
+import fieldsReducer from './slices/fieldsSlice';
+import submissionsReducer from './slices/submissionsSlice';
+import ghlReducer from './slices/ghlSlice';
 
-// Import slices (to be created later)
-import builderSlice from './slices/builderSlice';
-import formsSlice from './slices/formsSlice';
-import familySlice from './slices/familySlice';
-import uiSlice from './slices/uiSlice';
-
-// Create the Redux store
-export const makeStore = () => {
-  return configureStore({
+export const makeStore = () =>
+  configureStore({
     reducer: {
-      builder: builderSlice,
-      forms: formsSlice,
-      family: familySlice,
-      ui: uiSlice,
+      builder: builderReducer,
+      forms: formsReducer,
+      family: familyReducer,
+      ui: uiReducer,
+      fields: fieldsReducer,
+      submissions: submissionsReducer,
+      ghl: ghlReducer,
     },
-    middleware: (getDefaultMiddleware) =>
-      getDefaultMiddleware({
-        serializableCheck: {
-          // Ignore non-serializable values in state for now
-          // TODO: Implement proper serialization checks
-          ignoredActions: ['your/action/here'],
-          ignoredPaths: ['some.nested.path'],
-        },
-      }),
   });
-};
 
-// Define TypeScript types for the store
 export type AppStore = ReturnType<typeof makeStore>;
 export type RootState = ReturnType<AppStore['getState']>;
 export type AppDispatch = AppStore['dispatch'];
 
-// Typed hooks for use throughout the app
-export const useAppDispatch: () => AppDispatch = useDispatch;
-export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
+export const selectBuilderState = (state: RootState) => state.builder;
+export const selectFormsState = (state: RootState) => state.forms;
+export const selectFamilyState = (state: RootState) => state.family;
+export const selectUiState = (state: RootState) => state.ui;
+export const selectFieldsState = (state: RootState) => state.fields;
+export const selectSubmissionsState = (state: RootState) => state.submissions;
+export const selectGhlState = (state: RootState) => state.ghl;
+
+export default makeStore;

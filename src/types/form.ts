@@ -7,6 +7,7 @@ export interface LayoutElement {
   id: string;
   type: ElementType;
   props: Record<string, unknown>;
+  /** `null` = end of form, `START_ANCHOR` ('__start__') = top */
   insertAfter: string | null;
 }
 
@@ -61,4 +62,13 @@ export interface FormVersion {
   content: FormContent;
   resolvedSnapshot: ResolvedForm | null;
   publishedAt: Date | string | null;
+}
+
+/** Part 2 in-memory/store form record. */
+export interface FormRecord extends Form {
+  versions: FormVersion[];
+  /** Current editable draft content (unpublished changes). */
+  draft: FormContent | null;
+  createdAt: string;
+  updatedAt: string;
 }

@@ -36,8 +36,11 @@ export interface OwnField {
   placeholder?: string;
   helpText?: string;
   options?: string[];
+  /** Validation rules used by schema building and renderer constraints. */
+  validation?: FieldValidation;
   required: boolean;
   hidden: boolean;
+  /** `null` = end of form, `START_ANCHOR` ('__start__') = top */
   insertAfter: string | null;
 }
 
@@ -56,6 +59,7 @@ export interface ResolvedField {
   placeholder?: string;
   helpText?: string;
   options?: string[];
+  validation?: FieldValidation;
   required: boolean;
   hidden: boolean;
   origin: 'inherited' | 'own';

@@ -29,32 +29,33 @@ FormFamily is built with a clean, modular architecture that supports complex for
 
 ### State Management
 
-**Redux Store**
+**Redux Store (Part 2)**
 
-- Centralized state management using Redux Toolkit
-- Four main slices:
-  - `builderSlice`: Form builder UI state
-  - `formsSlice`: Form management state
-  - `familySlice`: Family tree and graph state
-  - `uiSlice`: UI-related state (toasts, modals, theme)
+- Client-side store using Redux Toolkit with typed hooks/selectors.
+- Slices: `forms`, `fields`, `submissions`, `ghl`, `builder`, `family`, `ui`.
+- Async work goes through thunks that call repositories in `src/services/*`.
+- App bootstrap hydrates from versioned localStorage (via `src/lib/persistence.ts`) or seeds deterministic mock data from `src/data/mock/*`; state changes are persisted for demo continuity. Reset demo data clears persisted state and reseeds.
 
-**State Flows**
+### Repository / Data Access Layer (Part 2)
 
-1. **Builder Actions**: User interactions in the builder affect `builderSlice`
-2. **Form Actions**: Form operations affect `formsSlice`
-3. **Family Actions**: Inheritance and graph operations affect `familySlice`
-4. **UI Actions**: UI state changes affect `uiSlice`
+- `src/services/`: `FormsRepository`, `FieldsRepository`, `SubmissionsRepository`, `GhlRepository` interfaces and in-memory implementations seeded from mocks.
+- All methods are async with a simulated delay (300–600ms) to exercise loading states.
+- No database/auth/queue/storage/GHL network calls in Part 2; API route stubs remain unchanged for Part 3.
 
 ### Business Logic
 
 **Pure Functions in `src/lib/forms/`**
 
-- `resolve.ts`: Form resolution and inheritance logic
-- `anchors.ts`: Item ordering and anchor-based positioning
-- `family-tree.ts`: Family tree operations and validation
-- `snapshot.ts`: Form snapshot and detach operations
-- `validate.ts`: Form validation and schema building
-- `build-zod-schema.ts`: Dynamic Zod schema generation
+- `resolve.ts`: form resolution/merging (root→leaf, overrides, locks, anchor placement)
+- `anchors.ts`: anchor insertion helpers (`START_ANCHOR`/`null`/id semantics)
+- `family-tree.ts`: ancestors/descendants/depth/cycle/depth-cap checks
+- `impact.ts`: impact computation
+- `snapshot.ts`: snapshot inherited content into standalone own content
+- `validate.ts`: key conflict detection
+- `build-zod-schema.ts`: Zod schema generation from resolved form (ignores hidden, enforces rules)
+- `diff.ts`: content diff helper
+- `chain.ts` / `publish-flow.ts`: resolution chain helpers and publish/conflict-merge propagation helpers
+- All logic is pure (no DB/React) and covered by Vitest tests.
 
 **GHL Integration in `src/lib/ghl/`**
 

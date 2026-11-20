@@ -4,84 +4,54 @@
 
 FormFamily is a 3-part development project with clear, progressive delivery stages. Each part builds upon the previous one, ensuring a solid foundation while delivering value incrementally.
 
-## Part 1: Project Context and Setup
+## Part 1: Project Context and Setup (Complete)
+
+Part 1 delivered the scaffold, docs, Prisma schema, typed stubs, and placeholder routes. All Part 1 acceptance checks passed.
+
+## Part 2: Frontend with Mock Data (Implemented)
 
 ### Goals
 
-1. **Fully absorb product context** (sections 2-6) and write it into project documentation
-2. **Set up the project**: dependencies, configuration, folder structure, typed stubs, placeholder routes and pages, Prisma schema, and conventions
-3. **Leave the codebase booting, linted, type-checked and ready for Part 2**
+- Build the full frontend working with deterministic mock data and no backend/auth/queues/storage/GHL network calls.
+- Use a repository layer + Redux client store (thunks/selectors) with `localStorage` persistence and reset demo data.
+- Implement real pure form logic in `src/lib/forms` with tests.
+- Deliver demoable screens/flows: dashboard, forms, create form, builder/publish, family graph, public form/submissions, field library, mocked GHL, settings, and dialogs.
 
-### What to Build
+### Delivered (Part 2)
 
-- Bootstrap Next.js app with all required packages
-- Create full folder structure from section 9
-- Create all types from section 10
-- Write Prisma schema from section 11
-- Create logic stubs and todo tests from section 12
-- Set up Redux store scaffold with typed hooks and four empty slices
-- Build app shell and make every route render
-- Write all documentation (PROJECT_CONTEXT.md, INHERITANCE_RULES.md, DATA_MODEL.md, GHL_INTEGRATION.md, ARCHITECTURE.md, PARTS.md, DECISIONS.md)
+- **Mock-first architecture**: `src/services/*` repositories (forms/fields/submissions/GHL) with in-memory async implementations, seeded from `src/data/mock/*`; `src/lib/persistence.ts` with versioned localStorage key and bootstrap/reset flow.
+- **Redux**: store with `forms`, `fields`, `submissions`, `ghl`, `builder`, `family`, `ui` slices; thunks/selectors/hooks and app bootstrap in `StoreProvider`.
+- **Pure logic**: real implementations and tests in `src/lib/forms` (`resolve`, anchors, family tree, impact, snapshot, conflicts, schema, diff, chain/publish helpers).
+- **Mock dataset**: Northwind Labs org/users, platform + org custom fields, 4-form family (Frontend v1/v2 published + draft v3, Backend, DevOps, QA) plus Internship draft, submissions, and mocked connected GHL with mappings/suggestions/duplicates/unmapped fields.
+- **UI/flows**: dashboard, forms/create, builder/publish, family graph (React Flow + dagre), public form/submissions, field library, mocked GHL integration, settings/reset demo data.
+- **Constraints preserved**: no DB/auth/queues/storage/GHL network calls; Part 1 API stubs left as-is; `docs/INHERITANCE_RULES.md` unchanged.
 
-### What NOT to Build
+## Part 2b: Close Frontend Gaps (Complete)
 
-- Real drag-and-drop, the real graph, real forms or real dialogs
-- Authentication, queues, storage SDKs or any GHL network calls
-- Packages beyond section 7 without telling me why
-- Change the rules in section 3
+### Baseline (verified at start)
 
-### Acceptance Criteria
+- `npm run build`, `npm run typecheck`, `npm run lint` (0 errors, 105 warnings), and `npm run test` (22/22) passed in `formfamily/`.
+- Gaps targeted: real palette→canvas DnD, keyboard/a11y/auto-scroll, Tiptap rich text + sanitised public render, undo/redo history, version history drawer, desktop/mobile + full-screen preview, autosave status/error-retry UI, detailed impact/conflict dialogs, `FormRenderer` parity/a11y, family graph affordances, screen states, a11y/responsive passes, lint restoration, unit tests for `diff.ts`/`chain.ts`/`publish-flow.ts`, Playwright e2e, complete `docs/QA_PART2.md`, and `docs/PART3_HANDOFF.md`.
 
-Part 1 is done when all of these pass:
+### Delivered (Part 2b)
 
-1. **pnpm install, pnpm typecheck, pnpm lint and pnpm test succeed**
-   - Todo tests count as pending, not failures
-   - All code passes linting and type checking
-   - Tests run successfully (including todo tests)
+- **Builder:** real `@dnd-kit` palette→canvas DnD (empty-canvas target, slots/drop indicators/overlay, correct `insertAfter`/`START_ANCHOR`, inherited pinned, "Added" disabling, click-to-add, own-item reorder), keyboard sensor/announcements (`aria-live`, pickup/move position), drag cancel handling, auto-scroll, and modular editor (`BuilderEditor`/`BuilderPalette`/`BuilderCanvas`/`BuilderPropertiesPanel`/`AutosaveIndicator`/`VersionHistoryDrawer`/`RichTextEditor` + `src/lib/builder/helpers.ts`).
+- **Rich text & rendering:** Tiptap editor for about/richtext content (`immediatelyRender: false`), `sanitizeHtml` via `isomorphic-dompurify` for public/applicant rendering of settings/about and richtext elements, with unit test covering `<script>` and inline handler stripping.
+- **History/preview/publish UX:** `builderSlice` history (`past/present/future`, cap/coalescing, clear on form switch, publish resets to published state), undo/redo UI and shortcuts, version history drawer (list/read-only snapshot, diff vs draft, restore-as-draft confirmation/undoable), desktop/mobile live preview and full-screen `/forms/[formId]/preview` (draft vs ancestors' published, disabled-submissions banner, back link), autosave status UI with retry and mock debug fail flag, detailed impact/conflict dialogs.
+- **Domain logic/tests:** improved `diff.ts`, `chain.ts`, `publish-flow.ts` (including deterministic publish/version handling and conflict/impact support) and added real unit tests for `diff.ts`, `chain.ts`, `publish-flow.ts`; overall unit suite passing.
+- **Graph/screens:** family graph hover highlight (path to root + descendants, dim others), hover/focus create-child affordance, minimap/legend/filter/layout/controls/details interactions; shared loading skeletons, empty states, and error-with-retry states across dashboard, forms, create form, families, submissions, per-form submissions, field library, GHL integration, settings, builder/edit, preview, public form, and basic auth/root screens; responsive table overflow handling and builder small-screen message.
+- **Quality/e2e:** strict lint configuration for targeted paths (`no-explicit-any` enforced in core paths) and hook fixes; Playwright configured (`@playwright/test`, `playwright.config.ts`, `npm run e2e`) with e2e coverage for palette→canvas drag (real pointer events), Frontend draft publish with key-conflict merge flowing to Backend/DevOps/QA, detach, and public submit with correct version.
+- **Docs:** `docs/QA_PART2.md` walked and recorded as passing, and `docs/PART3_HANDOFF.md` added.
 
-2. **pnpm dev starts and every sidebar link and route in section 9 renders without errors**
-   - All 20+ placeholder pages load correctly
-   - Dashboard layout works with sidebar navigation
-   - No JavaScript errors in browser console
-   - Responsive design works
+### Verification (final)
 
-3. **pnpm prisma generate succeeds and the schema validates**
-   - Prisma client generation successful
-   - All Prisma models compile correctly
-   - Database schema validates
+- `npm run build` — pass
+- `npm run typecheck` — pass
+- `npm run lint` — pass (0 errors, warnings remain outside/allowed by current scope)
+- `npm run test` — pass (45 tests)
+- `npm run e2e` — pass (4 Playwright scenarios)
 
-4. **The folder structure matches section 9 and all docs exist and are accurate**
-   - All required directories and files present
-   - Documentation complete and accurate
-   - Code structure follows specifications
-
-5. **No business logic, auth or GHL calls were added**
-   - All API routes are stubs that throw 'Not implemented'
-   - No real database operations
-   - No external network calls
-   - All logic is pure functions or stubs
-
-### Completion Commands
-
-```bash
-# Install dependencies
-pnpm install
-
-# Type check
-pnpm typecheck
-
-# Lint code
-pnpm lint
-
-# Run tests (including todo tests)
-pnpm test
-
-# Start development server
-pnpm dev
-
-# Generate Prisma client
-pnpm db:generate
-```
+See `docs/QA_PART2.md` for the itemized Part 2 checklist and results, and `docs/PART3_HANDOFF.md` for migration guidance.
 
 ## Part 2: Frontend with Static Data
 
