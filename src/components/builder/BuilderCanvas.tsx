@@ -137,7 +137,6 @@ function InheritedRow({
   item,
   selected,
   onSelect,
-  formId,
   id,
 }: {
   item: ResolvedItem;
@@ -149,55 +148,88 @@ function InheritedRow({
   const field = item.kind === 'field' ? item.field : null;
   const locked = field?.locked ?? false;
   const hidden = field?.hidden ?? false;
+  const canDrag = !locked;
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id,
+    data: { type: 'canvas-item', own: false },
+    disabled: !canDrag,
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.45 : 1,
+  } as React.CSSProperties;
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onSelect();
-        }
-      }}
-      className={cn(
-        'focus-visible:ring-ring rounded-md border p-3 outline-none focus-visible:ring-2',
-        selected
-          ? 'border-primary ring-primary/20 ring-2'
-          : 'hover:border-foreground/20',
-        locked ? 'bg-muted/30' : '',
-      )}
-      aria-label={`${resolvedItemLabel(item)}, inherited${locked ? ', locked' : ''}`}
-      data-canvas-item-id={id}
-    >
-      <div className="flex items-start gap-2">
-        <div className="text-muted-foreground mt-0.5 size-5" aria-hidden />
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium">
-              {resolvedItemLabel(item)}
-            </span>
-            <Badge variant="outline" className="gap-1">
-              <LinkIcon className="size-3" />
-              Inherited
-            </Badge>
-            {locked ? (
+    <div ref={setNodeRef} style={style} className="space-y-0">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onSelect}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onSelect();
+          }
+        }}
+        className={cn(
+          'focus-visible:ring-ring rounded-md border p-3 outline-none focus-visible:ring-2',
+          selected
+            ? 'border-primary ring-primary/20 ring-2'
+            : 'hover:border-foreground/20',
+          locked ? 'bg-muted/30' : '',
+        )}
+        aria-label={`${resolvedItemLabel(item)}, inherited${locked ? ', locked' : ''}`}
+        data-canvas-item-id={id}
+      >
+        <div className="flex items-start gap-2">
+          {canDrag ? (
+            <button
+              type="button"
+              className="text-muted-foreground hover:bg-accent mt-0.5 cursor-grab touch-none rounded p-0.5"
+              aria-label="Drag to reorder inherited item"
+              {...attributes}
+              {...listeners}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <GripVertical className="size-4" />
+            </button>
+          ) : (
+            <div className="text-muted-foreground mt-0.5 size-5" aria-hidden />
+          )}
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium">
+                {resolvedItemLabel(item)}
+              </span>
               <Badge variant="outline" className="gap-1">
-                <Lock className="size-3" />
-                Locked
+                <LinkIcon className="size-3" />
+                Inherited
               </Badge>
-            ) : null}
-            {hidden ? (
-              <Badge variant="outline" className="gap-1">
-                <EyeOff className="size-3" />
-                Hidden
-              </Badge>
-            ) : null}
-          </div>
-          <div className="text-muted-foreground mt-1 text-xs">
-            {item.kind === 'field'
-              ? `${item.field.type} • key: ${item.field.key}`
-              : `element • ${item.element.type}`}
+              {locked ? (
+                <Badge variant="outline" className="gap-1">
+                  <Lock className="size-3" />
+                  Locked
+                </Badge>
+              ) : null}
+              {hidden ? (
+                <Badge variant="outline" className="gap-1">
+                  <EyeOff className="size-3" />
+                  Hidden
+                </Badge>
+              ) : null}
+            </div>
+            <div className="text-muted-foreground mt-1 text-xs">
+              {item.kind === 'field'
+                ? `${item.field.type} • key: ${item.field.key}`
+                : `element • ${item.element.type}`}
+            </div>
           </div>
         </div>
       </div>
@@ -259,7 +291,7 @@ export function BuilderCanvas({
   dragActive: boolean;
   overId: string | null;
 }) {
-  const ownIds = items.filter((i) => isOwnCanvasItem(i, formId)).map(getItemId);
+  const sortableIds = items.map(getItemId);
 
   return (
     <Card className="min-h-[420px]">
@@ -271,7 +303,7 @@ export function BuilderCanvas({
           <EmptyCanvasDrop dragActive={dragActive} overId={overId} />
         ) : (
           <SortableContext
-            items={ownIds}
+            items={sortableIds}
             strategy={verticalListSortingStrategy}
           >
             <div

@@ -513,9 +513,10 @@ export function BuilderEditor({ formId }: { formId: string }) {
       return;
     }
 
-    // reorder own canvas item
+    // reorder canvas item (own or inherited)
     const activeItem = resolved.items.find((i) => getItemId(i) === activeStr);
-    if (!activeItem || !isOwnCanvasItem(activeItem, form.id)) return;
+    if (!activeItem) return;
+    if (activeItem.kind === 'field' && activeItem.field.locked) return;
     const oldIndex = resolved.items.findIndex(
       (i) => getItemId(i) === activeStr,
     );
@@ -532,12 +533,19 @@ export function BuilderEditor({ formId }: { formId: string }) {
     const pos = reordered.indexOf(activeStr);
     const prevId = pos <= 0 ? START_ANCHOR : reordered[pos - 1];
     const next = clone(draft);
-    if (activeItem.kind === 'field') {
-      const f = next.ownFields.find((x) => x.key === activeStr);
-      if (f) f.insertAfter = prevId;
+    if (isOwnCanvasItem(activeItem, form.id)) {
+      if (activeItem.kind === 'field') {
+        const f = next.ownFields.find((x) => x.key === activeStr);
+        if (f) f.insertAfter = prevId;
+      } else {
+        const el = next.elements.find((x) => x.id === activeStr);
+        if (el) el.insertAfter = prevId;
+      }
     } else {
-      const el = next.elements.find((x) => x.id === activeStr);
-      if (el) el.insertAfter = prevId;
+      next.positionOverrides = {
+        ...(next.positionOverrides ?? {}),
+        [activeStr]: prevId,
+      };
     }
     applyEdit(next);
     const posHuman = pos + 1;
@@ -582,6 +590,46 @@ export function BuilderEditor({ formId }: { formId: string }) {
       [key]: { ...(next.overrides?.[key] ?? {}), ...patch },
     };
     applyEdit(next);
+  };
+  const resetInherited = (key: string) => {
+    if (!draft) return;
+    const next = clone(draft);
+    next.overrides = {
+      ...(next.overrides ?? {}),
+      [key]: {
+        ...(next.overrides?.[key] ?? {}),
+        label: undefined,
+        placeholder: undefined,
+        helpText: undefined,
+        required: undefined,
+        hidden: undefined,
+      },
+    };
+    if (next.positionOverrides && key in next.positionOverrides) {
+      const { [key]: _removed, ...rest } = next.positionOverrides;
+      next.positionOverrides = rest;
+    }
+    if (next.elementOverrides && key in next.elementOverrides) {
+      const { [key]: _removed, ...rest } = next.elementOverrides;
+      next.elementOverrides = rest;
+    }
+    applyEdit(next);
+  };
+  const setElementOverride = (
+    id: string,
+    props: Record<string, unknown>,
+    coalesceKey?: string,
+  ) => {
+    if (!draft) return;
+    const next = clone(draft);
+    next.elementOverrides = {
+      ...(next.elementOverrides ?? {}),
+      [id]: {
+        ...(next.elementOverrides?.[id] ?? {}),
+        props: { ...(next.elementOverrides?.[id]?.props ?? {}), ...props },
+      },
+    };
+    applyEdit(next, coalesceKey);
   };
   const toggleLock = (keyOrId: string) => {
     if (!draft) return;
@@ -1032,7 +1080,9 @@ export function BuilderEditor({ formId }: { formId: string }) {
               selectedItem={selectedItem as ResolvedItem | null}
               onUpdateOwnField={updateOwnField}
               onUpdateOwnElement={updateOwnElement}
+              onSetElementOverride={setElementOverride}
               onSetOverride={setOverride}
+              onResetInherited={resetInherited}
               onToggleLock={toggleLock}
               onRemoveOwn={removeOwn}
               onUpdateSettings={updateSettings}

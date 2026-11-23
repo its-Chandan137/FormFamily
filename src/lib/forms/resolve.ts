@@ -37,10 +37,21 @@ function applyOverridesAndLocks(
   formId: string,
 ): void {
   const overrides = content.overrides ?? {};
+  const elementOverrides = content.elementOverrides ?? {};
   const locks = new Set(content.locks ?? []);
 
   for (const node of nodes) {
-    if (node.kind !== 'field') continue;
+    if (node.kind === 'element') {
+      const override = elementOverrides[node.id];
+      if (override?.props) {
+        node.element = {
+          ...node.element,
+          props: { ...(node.element.props ?? {}), ...override.props },
+        };
+      }
+      continue;
+    }
+
     const field = node.field;
 
     // Apply overrides only to unlocked fields. Locked fields ignore all
@@ -159,6 +170,32 @@ export function resolveForm(
     } else {
       // Root: locks apply to its own fields as well.
       applyOverridesAndLocks(nodes, content, formId);
+    }
+
+    const positionOverrides = content.positionOverrides ?? {};
+    if (i > 0 && Object.keys(positionOverrides).length > 0) {
+      const movedIds = new Set(
+        Object.keys(positionOverrides).filter((id) => {
+          const node = nodes.find((n) => n.id === id);
+          if (!node) return false;
+          if (node.kind === 'field' && node.field.locked) return false;
+          return true;
+        }),
+      );
+      if (movedIds.size > 0) {
+        const base: ResolvedNode[] = [];
+        const moved: ResolvedNode[] = [];
+        for (const n of nodes) {
+          if (movedIds.has(n.id)) moved.push(n);
+          else base.push(n);
+        }
+        nodes = insertAnchoredItems(
+          base,
+          moved,
+          (n) => n.id,
+          (n) => positionOverrides[n.id] ?? null,
+        );
+      }
     }
 
     const ownNodes = buildOwnNodes(content, formId);

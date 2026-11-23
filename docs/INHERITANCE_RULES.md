@@ -51,6 +51,7 @@ A child can:
 
 - **Change labels, text and settings**: logo, company name, about
 - **Add its own fields**: New fields specific to this child
+- **Reposition inherited fields/elements**: Change where inherited items appear in the child form (position override); the item identity/key stays the same
 - **Hide inherited fields**: Make inherited fields invisible
 - **Mark inherited fields as optional**: Change required status of inherited fields
 
@@ -59,7 +60,8 @@ A child can:
 A child cannot:
 
 - **Remove inherited fields**: Can only hide them
-- **Change locked fields**: Locked fields are immutable in descendants
+- **Change locked field identity/key**: Field key (GHL/canonical identity) is immutable
+- **Change locked fields**: Locked fields are immutable in descendants (label/placeholder/help text/required/hidden/position overrides are blocked)
 
 #### 6. Lock Propagation
 
@@ -125,6 +127,10 @@ interface FormContent {
   elements: LayoutElement[];
   overrides: Record<string, FieldOverride>;
   locks: string[];
+  /** Child position overrides for inherited item ids/keys; absent = inherit position. */
+  positionOverrides?: Record<string, string | null>;
+  /** Child prop overrides for inherited layout elements, keyed by element id. */
+  elementOverrides?: Record<string, { props?: Record<string, unknown> }>;
 }
 ```
 
@@ -150,6 +156,7 @@ Ordering uses anchors, not absolute positions.
 - Hidden fields keep their position, so unhiding restores the layout.
 - If an anchor is deleted by the parent, the child's item falls back to the end of its section.
 - Items sharing an anchor keep their relative order.
+- A child may store `positionOverrides` for inherited items (field keys or element ids) to reposition them at a different anchor. Locked inherited fields cannot be repositioned. The item's identity/key remains unchanged.
 
 Example:
 

@@ -548,7 +548,8 @@ Form content is stored as JSONB in `FormVersion.content`:
   ],
   "elements": [],
   "overrides": {},
-  "locks": []
+  "locks": [],
+  "positionOverrides": {}
 }
 ```
 

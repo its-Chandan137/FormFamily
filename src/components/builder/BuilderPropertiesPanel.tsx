@@ -22,7 +22,9 @@ export function BuilderPropertiesPanel({
   selectedItem,
   onUpdateOwnField,
   onUpdateOwnElement,
+  onSetElementOverride,
   onSetOverride,
+  onResetInherited,
   onToggleLock,
   onRemoveOwn,
   onUpdateSettings,
@@ -40,7 +42,9 @@ export function BuilderPropertiesPanel({
     patch: Partial<LayoutElement>,
     coalesceKey?: string,
   ) => void;
+  onSetElementOverride: (id: string, props: Record<string, unknown>) => void;
   onSetOverride: (key: string, patch: Record<string, unknown>) => void;
+  onResetInherited: (key: string) => void;
   onToggleLock: (id: string) => void;
   onRemoveOwn: (id: string, kind: 'field' | 'element') => void;
   onUpdateSettings: (
@@ -68,6 +72,8 @@ export function BuilderPropertiesPanel({
               selectedItem.origin === 'inherited'
             }
             onUpdate={onUpdateOwnElement}
+            onSetElementOverride={onSetElementOverride}
+            onResetInherited={onResetInherited}
             onRemove={onRemoveOwn}
           />
         ) : selectedItem.field.origin === 'inherited' ? (
@@ -75,6 +81,7 @@ export function BuilderPropertiesPanel({
             field={selectedItem.field}
             draft={draft}
             onSetOverride={onSetOverride}
+            onResetInherited={onResetInherited}
             onToggleLock={onToggleLock}
           />
         ) : (
@@ -143,11 +150,11 @@ export function BuilderPropertiesPanel({
 }
 
 function ElementProps({
-  form,
-  draft,
   element,
   inherited,
   onUpdate,
+  onSetElementOverride,
+  onResetInherited,
   onRemove,
 }: {
   form: FormRecord;
@@ -159,26 +166,46 @@ function ElementProps({
     patch: Partial<LayoutElement>,
     coalesceKey?: string,
   ) => void;
+  onSetElementOverride: (
+    id: string,
+    props: Record<string, unknown>,
+    coalesceKey?: string,
+  ) => void;
+  onResetInherited: (key: string) => void;
   onRemove: (id: string, kind: 'field' | 'element') => void;
 }) {
-  const own = !inherited && draft.elements.some((e) => e.id === element.id);
+  const own = !inherited;
+  const updateProps = (
+    props: Record<string, unknown>,
+    coalesceKey?: string,
+  ) => {
+    if (own) {
+      onUpdate(
+        element.id,
+        { props: { ...element.props, ...props } },
+        coalesceKey,
+      );
+    } else {
+      onSetElementOverride(element.id, props, coalesceKey);
+    }
+  };
+
   return (
     <div className="space-y-3">
-      <div className="text-sm font-medium">Element: {element.type}</div>
+      <div className="text-sm font-medium">
+        Element: {element.type}{' '}
+        {inherited ? (
+          <span className="text-muted-foreground">(inherited)</span>
+        ) : null}
+      </div>
       {element.type === 'heading' ? (
         <div className="space-y-1">
           <Label>Text</Label>
           <Input
             value={String(element.props.text ?? '')}
             onChange={(e) =>
-              own &&
-              onUpdate(
-                element.id,
-                { props: { ...element.props, text: e.target.value } },
-                `el.${element.id}.text`,
-              )
+              updateProps({ text: e.target.value }, `el.${element.id}.text`)
             }
-            disabled={!own}
           />
         </div>
       ) : null}
@@ -189,14 +216,8 @@ function ElementProps({
             <Input
               value={String(element.props.title ?? '')}
               onChange={(e) =>
-                own &&
-                onUpdate(
-                  element.id,
-                  { props: { ...element.props, title: e.target.value } },
-                  `el.${element.id}.title`,
-                )
+                updateProps({ title: e.target.value }, `el.${element.id}.title`)
               }
-              disabled={!own}
             />
           </div>
           <div className="space-y-1">
@@ -204,14 +225,11 @@ function ElementProps({
             <Input
               value={String(element.props.description ?? '')}
               onChange={(e) =>
-                own &&
-                onUpdate(
-                  element.id,
-                  { props: { ...element.props, description: e.target.value } },
+                updateProps(
+                  { description: e.target.value },
                   `el.${element.id}.desc`,
                 )
               }
-              disabled={!own}
             />
           </div>
         </>
@@ -219,25 +237,10 @@ function ElementProps({
       {element.type === 'richtext' ? (
         <div className="space-y-1">
           <Label>Content</Label>
-          {own ? (
-            <RichTextEditor
-              value={String(element.props.html ?? '')}
-              onChange={(html) =>
-                onUpdate(
-                  element.id,
-                  { props: { ...element.props, html } },
-                  `el.${element.id}.html`,
-                )
-              }
-            />
-          ) : (
-            <div
-              className="prose prose-sm max-w-none rounded-md border p-3"
-              dangerouslySetInnerHTML={{
-                __html: String(element.props.html ?? ''),
-              }}
-            />
-          )}
+          <RichTextEditor
+            value={String(element.props.html ?? '')}
+            onChange={(html) => updateProps({ html }, `el.${element.id}.html`)}
+          />
         </div>
       ) : null}
       {element.type === 'logo' ? (
@@ -245,13 +248,7 @@ function ElementProps({
           <Label>Logo URL (optional, falls back to form setting)</Label>
           <Input
             value={String(element.props.src ?? '')}
-            onChange={(e) =>
-              own &&
-              onUpdate(element.id, {
-                props: { ...element.props, src: e.target.value },
-              })
-            }
-            disabled={!own}
+            onChange={(e) => updateProps({ src: e.target.value })}
           />
         </div>
       ) : null}
@@ -264,10 +261,19 @@ function ElementProps({
           Remove element
         </Button>
       ) : (
-        <p className="text-muted-foreground text-xs">
-          Inherited element (source form:{' '}
-          {form.id === element.id ? 'current' : 'ancestor'}).
-        </p>
+        <div className="space-y-2">
+          <p className="text-muted-foreground text-xs">
+            Inherited element — you can change text/content and position, but
+            not remove it or change its identity.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onResetInherited(element.id)}
+          >
+            Reset to inherited
+          </Button>
+        </div>
       )}
     </div>
   );
@@ -277,11 +283,13 @@ function InheritedFieldProps({
   field,
   draft,
   onSetOverride,
+  onResetInherited,
   onToggleLock,
 }: {
   field: any;
   draft: FormContent;
   onSetOverride: (key: string, patch: Record<string, unknown>) => void;
+  onResetInherited: (key: string) => void;
   onToggleLock: (id: string) => void;
 }) {
   const override = draft.overrides?.[field.key] ?? {};
@@ -353,15 +361,7 @@ function InheritedFieldProps({
       <Button
         variant="outline"
         size="sm"
-        onClick={() =>
-          onSetOverride(field.key, {
-            label: undefined,
-            placeholder: undefined,
-            helpText: undefined,
-            required: undefined,
-            hidden: undefined,
-          })
-        }
+        onClick={() => onResetInherited(field.key)}
         disabled={locked}
       >
         Reset to inherited

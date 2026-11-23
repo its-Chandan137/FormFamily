@@ -26,6 +26,14 @@ export interface FormContent {
   elements: LayoutElement[];
   overrides: Record<string, FieldOverride>;
   locks: string[];
+  /**
+   * Child position overrides for inherited items (field key or element id).
+   * When present, the inherited item is repositioned at this anchor during
+   * resolution for this form level. Absent = keep inherited position.
+   */
+  positionOverrides?: Record<string, string | null>;
+  /** Child prop overrides for inherited layout elements, keyed by element id. */
+  elementOverrides?: Record<string, { props?: Record<string, unknown> }>;
 }
 
 export type VersionStatus = 'draft' | 'published';
