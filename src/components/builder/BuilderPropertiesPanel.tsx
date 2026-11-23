@@ -1224,21 +1224,21 @@ function FormSettingsPanel({
             </div>
             <div className="space-y-1.5">
               <Label>Form width</Label>
-              <SegmentedControl
-                ariaLabel="Form width"
+              <select
+                className="h-10 w-full rounded-lg border border-[#E5E9F2] bg-white px-3 text-sm"
                 value={s.formWidth ?? 'medium'}
-                onValueChange={(v) =>
+                onChange={(e) =>
                   onUpdateSettings({
-                    formWidth: v as 'narrow' | 'medium' | 'wide' | 'full',
+                    formWidth: e.target.value as
+                      'narrow' | 'medium' | 'wide' | 'full',
                   })
                 }
-                options={[
-                  { value: 'narrow', label: 'Narrow' },
-                  { value: 'medium', label: 'Medium' },
-                  { value: 'wide', label: 'Wide' },
-                  { value: 'full', label: 'Full' },
-                ]}
-              />
+              >
+                <option value="narrow">Narrow</option>
+                <option value="medium">Medium</option>
+                <option value="wide">Wide</option>
+                <option value="full">Full</option>
+              </select>
             </div>
             <div className="space-y-1.5">
               <Label>Success message</Label>

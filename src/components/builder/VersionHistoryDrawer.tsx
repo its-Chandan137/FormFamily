@@ -75,7 +75,10 @@ export function VersionHistoryDrawer({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="right" className="w-full sm:max-w-3xl">
+        <SheetContent
+          side="right"
+          className="!w-full !max-w-full sm:!w-[50vw] sm:!max-w-[50vw]"
+        >
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <History className="size-5" />
@@ -86,9 +89,25 @@ export function VersionHistoryDrawer({
               draft, or restore it as a draft.
             </SheetDescription>
           </SheetHeader>
-          <div className="grid h-[calc(100vh-8rem)] grid-cols-1 gap-4 p-4 pt-0 md:grid-cols-[260px_minmax(0,1fr)]">
-            <div className="min-h-0 rounded-md border">
-              <ScrollArea className="h-full max-h-[40vh] md:max-h-full">
+          <div className="flex h-[calc(100dvh-8rem)] min-h-0 flex-col gap-4 p-4 pt-0 md:grid md:grid-cols-[260px_minmax(0,1fr)]">
+            <div className="min-h-0 rounded-md border md:h-full">
+              <div className="border-b p-2 md:hidden">
+                <label className="text-muted-foreground mb-1 block text-xs font-medium">
+                  Version
+                </label>
+                <select
+                  className="bg-background h-9 w-full rounded-md border px-2 text-sm"
+                  value={selected?.id ?? ''}
+                  onChange={(e) => setSelectedId(e.target.value)}
+                >
+                  {sorted.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      v{v.versionNumber} ({v.status}) - {fmtDate(v.publishedAt)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <ScrollArea className="hidden h-full md:block">
                 <div className="p-2">
                   {sorted.length === 0 ? (
                     <p className="text-muted-foreground p-2 text-sm">
@@ -128,7 +147,7 @@ export function VersionHistoryDrawer({
                 </div>
               </ScrollArea>
             </div>
-            <div className="min-h-0 space-y-3 overflow-auto">
+            <div className="min-h-0 flex-1 space-y-3 overflow-auto">
               {selected ? (
                 <>
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -193,13 +212,15 @@ export function VersionHistoryDrawer({
                       Read-only preview (resolved snapshot)
                     </div>
                     {selected.resolvedSnapshot ? (
-                      <div className="rounded-md border p-4">
-                        <FormRenderer
-                          resolved={selected.resolvedSnapshot}
-                          onSubmit={() => {}}
-                          disableSubmit
-                          submitLabel="Submit (disabled)"
-                        />
+                      <div className="overflow-x-auto rounded-md border p-4">
+                        <div className="min-w-[280px]">
+                          <FormRenderer
+                            resolved={selected.resolvedSnapshot}
+                            onSubmit={() => {}}
+                            disableSubmit
+                            submitLabel="Submit (disabled)"
+                          />
+                        </div>
                       </div>
                     ) : (
                       <p className="text-muted-foreground text-sm">

@@ -36,6 +36,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -306,6 +312,7 @@ export function BuilderEditor({ formId }: { formId: string }) {
   >('build');
   const [zoom, setZoom] = useState(100);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [propertiesSheetOpen, setPropertiesSheetOpen] = useState(false);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedJson = useRef<string>('');
@@ -1127,6 +1134,14 @@ export function BuilderEditor({ formId }: { formId: string }) {
             >
               Publish Form
             </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 gap-2 border-[#E5E9F2] bg-white text-[#17213D] hover:bg-slate-50 xl:hidden"
+              onClick={() => setPropertiesSheetOpen(true)}
+            >
+              Properties
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger
                 className="inline-flex size-10 items-center justify-center rounded-md border border-[#E5E9F2] bg-white text-sm hover:bg-slate-50"
@@ -1248,7 +1263,7 @@ export function BuilderEditor({ formId }: { formId: string }) {
               />
             </div>
 
-            <div className="flex h-full min-h-0 w-[235px] shrink-0 flex-col overflow-hidden xl:w-[245px]">
+            <div className="hidden h-full min-h-0 w-[235px] shrink-0 flex-col overflow-hidden xl:flex xl:w-[245px]">
               <BuilderPropertiesPanel
                 form={form}
                 draft={draft}
@@ -1280,6 +1295,39 @@ export function BuilderEditor({ formId }: { formId: string }) {
           </DragOverlay>
         </DndContext>
       </div>
+
+      <Sheet open={propertiesSheetOpen} onOpenChange={setPropertiesSheetOpen}>
+        <SheetContent
+          side="right"
+          className="w-[min(92vw,360px)] p-0 sm:max-w-[360px]"
+          showCloseButton={false}
+        >
+          <SheetHeader className="sr-only">
+            <SheetTitle>Field properties</SheetTitle>
+          </SheetHeader>
+          <div className="h-full min-h-0">
+            <BuilderPropertiesPanel
+              form={form}
+              draft={draft}
+              selectedItem={selectedItem as ResolvedItem | null}
+              resolvedItems={resolved?.items ?? []}
+              onUpdateOwnField={updateOwnField}
+              onUpdateOwnElement={updateOwnElement}
+              onSetElementOverride={setElementOverride}
+              onSetOverride={setOverride}
+              onResetInherited={resetInherited}
+              onToggleLock={toggleLock}
+              onRemoveOwn={removeOwn}
+              onUpdateSettings={updateSettings}
+              onClose={() => {
+                selectItem(null);
+                setPropertiesSheetOpen(false);
+              }}
+              onDuplicateSelected={onDuplicateSelected}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {announce}
