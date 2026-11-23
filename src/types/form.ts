@@ -1,4 +1,9 @@
-﻿import type { FieldOverride, OwnField, ResolvedField } from './field';
+﻿import type {
+  FieldOverride,
+  OwnField,
+  ResolvedField,
+  VisibilityCondition,
+} from './field';
 
 export type ElementType =
   'logo' | 'heading' | 'richtext' | 'divider' | 'section';
@@ -9,6 +14,7 @@ export interface LayoutElement {
   props: Record<string, unknown>;
   /** `null` = end of form, `START_ANCHOR` ('__start__') = top */
   insertAfter: string | null;
+  visibilityCondition?: VisibilityCondition;
 }
 
 export interface FormSettings {
@@ -20,6 +26,10 @@ export interface FormSettings {
   successMessage?: string;
   /** Per-form layout only; not inherited by children. */
   layoutColumns?: 1 | 2 | 3;
+  /** Per-form mobile layout only; not inherited by children. */
+  mobileLayoutColumns?: 1 | 2;
+  /** Per-form width only; not inherited by children. */
+  formWidth?: 'narrow' | 'medium' | 'wide' | 'full';
 }
 
 export interface FormContent {

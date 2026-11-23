@@ -13,6 +13,8 @@ export interface PaletteItemDef {
   key?: string;
   type: string;
   label: string;
+  /** Preset library field (fixed key). Generic fields omit key. */
+  preset?: boolean;
 }
 
 function DraggablePaletteItem({
@@ -24,7 +26,7 @@ function DraggablePaletteItem({
   disabled: boolean;
   onAdd: () => void;
 }) {
-  const id = `palette:${item.kind}:${item.kind === 'field' ? item.key : item.type}`;
+  const id = `palette:${item.kind}:${item.kind === 'field' ? (item.key ?? item.type) : item.type}`;
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id, disabled, data: { source: 'palette', item } });
   const style = transform
@@ -79,6 +81,28 @@ function DraggablePaletteItem({
   );
 }
 
+function PaletteSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
+        {title}
+      </div>
+      {description ? (
+        <p className="text-muted-foreground mb-2 text-[11px]">{description}</p>
+      ) : null}
+      <div className="grid gap-1.5">{children}</div>
+    </div>
+  );
+}
+
 export function BuilderPalette({
   items,
   existingFieldKeys,
@@ -88,7 +112,8 @@ export function BuilderPalette({
   existingFieldKeys: Set<string>;
   onAdd: (item: PaletteItemDef) => void;
 }) {
-  const fields = items.filter((i) => i.kind === 'field');
+  const genericFields = items.filter((i) => i.kind === 'field' && !i.preset);
+  const presetFields = items.filter((i) => i.kind === 'field' && i.preset);
   const elements = items.filter((i) => i.kind === 'element');
 
   return (
@@ -100,39 +125,44 @@ export function BuilderPalette({
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div>
-          <div className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
-            Fields
-          </div>
-          <div className="grid gap-1.5">
-            {fields.map((item) => {
+        <PaletteSection
+          title="Fields"
+          description="Generic fields — add and customize labels/options."
+        >
+          {genericFields.map((item, idx) => (
+            <DraggablePaletteItem
+              key={`g-${item.type}-${idx}`}
+              item={item}
+              disabled={false}
+              onAdd={() => onAdd(item)}
+            />
+          ))}
+        </PaletteSection>
+        {presetFields.length > 0 ? (
+          <PaletteSection title="Preset fields">
+            {presetFields.map((item) => {
               const disabled = !!item.key && existingFieldKeys.has(item.key);
               return (
                 <DraggablePaletteItem
-                  key={`f-${item.key}`}
+                  key={`p-${item.key}`}
                   item={item}
                   disabled={disabled}
                   onAdd={() => onAdd(item)}
                 />
               );
             })}
-          </div>
-        </div>
-        <div>
-          <div className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
-            Elements
-          </div>
-          <div className="grid gap-1.5">
-            {elements.map((item) => (
-              <DraggablePaletteItem
-                key={`e-${item.type}`}
-                item={item}
-                disabled={false}
-                onAdd={() => onAdd(item)}
-              />
-            ))}
-          </div>
-        </div>
+          </PaletteSection>
+        ) : null}
+        <PaletteSection title="Elements">
+          {elements.map((item) => (
+            <DraggablePaletteItem
+              key={`e-${item.type}`}
+              item={item}
+              disabled={false}
+              onAdd={() => onAdd(item)}
+            />
+          ))}
+        </PaletteSection>
       </CardContent>
     </Card>
   );

@@ -1,5 +1,10 @@
 ﻿import { z, type ZodTypeAny } from 'zod';
-import type { FieldValidation, ResolvedField, ResolvedForm } from '@/types';
+import type {
+  FieldValidation,
+  ResolvedField,
+  ResolvedForm,
+  VisibilityCondition,
+} from '@/types';
 
 function applyStringRules(
   schema: z.ZodString,
@@ -44,6 +49,19 @@ function numberSchema(field: ResolvedField): ZodTypeAny {
   if (v?.min !== undefined) n = (n as z.ZodNumber).min(v.min);
   if (v?.max !== undefined) n = (n as z.ZodNumber).max(v.max);
   return n;
+}
+
+export function isVisibilityConditionMet(
+  condition: VisibilityCondition | undefined,
+  values: Record<string, unknown>,
+): boolean {
+  if (!condition) return true;
+  const raw = values[condition.fieldKey];
+  const actual =
+    typeof raw === 'boolean' ? String(raw) : raw == null ? '' : String(raw);
+  if (condition.operator === 'equals') return actual === condition.value;
+  if (condition.operator === 'not_equals') return actual !== condition.value;
+  return true;
 }
 
 function fileSchema(field: ResolvedField, required: boolean): ZodTypeAny {
@@ -124,14 +142,97 @@ function schemaForField(field: ResolvedField): ZodTypeAny {
         .union([z.boolean(), z.array(z.string()), z.undefined(), z.null()])
         .optional();
     }
+    case 'checkbox_group': {
+      const arr = z.array(z.string());
+      if (required) return arr.min(1, 'Required');
+      return arr.optional();
+    }
     case 'file':
       return fileSchema(field, required);
+    case 'file_multiple': {
+      const arr = z.array(z.any());
+      if (required) return arr.min(1, 'Required');
+      return arr.optional();
+    }
+    case 'multiselect': {
+      const arr = z.array(z.string());
+      if (required) return arr.min(1, 'Required');
+      return arr.optional();
+    }
+    case 'toggle': {
+      if (required) return z.boolean().refine((v) => v === true, 'Required');
+      return z.boolean().optional();
+    }
+    case 'rating':
+    case 'slider': {
+      const n = numberSchema(field);
+      if (required) return n;
+      return z.preprocess(
+        (val) =>
+          val === '' || val === null || val === undefined ? undefined : val,
+        n.optional(),
+      );
+    }
+    case 'daterange': {
+      const obj = z.object({
+        start: z.string().optional(),
+        end: z.string().optional(),
+      });
+      if (required) {
+        return obj.refine((v) => !!v.start && !!v.end, 'Required');
+      }
+      return obj.optional();
+    }
+    case 'address_group': {
+      const obj = z.object({
+        street: z.string().optional(),
+        city: z.string().optional(),
+        state: z.string().optional(),
+        postalCode: z.string().optional(),
+        country: z.string().optional(),
+      });
+      if (required) {
+        return obj.refine(
+          (v) => !!v.street && !!v.city && !!v.country,
+          'Required',
+        );
+      }
+      return obj.optional();
+    }
+    case 'name_group': {
+      const obj = z.object({
+        first: z.string().optional(),
+        middle: z.string().optional(),
+        last: z.string().optional(),
+      });
+      if (required) {
+        return obj.refine((v) => !!v.first && !!v.last, 'Required');
+      }
+      return obj.optional();
+    }
+    case 'repeater': {
+      const arr = z.array(z.record(z.string(), z.any()));
+      if (required) return arr.min(1, 'Required');
+      return arr.optional();
+    }
+    case 'signature': {
+      let s = z.string();
+      if (required) s = s.min(1, 'Required');
+      else return z.union([s, z.literal('')]).optional();
+      return s;
+    }
+    case 'hidden': {
+      return z.any().optional();
+    }
     case 'text':
     case 'textarea':
     case 'phone':
     case 'date':
+    case 'time':
+    case 'datetime':
     case 'select':
     case 'radio':
+    case 'likert':
     default: {
       let s = applyStringRules(z.string(), field);
       if (required) {
@@ -146,15 +247,21 @@ function schemaForField(field: ResolvedField): ZodTypeAny {
 
 /**
  * Builds a Zod schema from a resolved form for submission validation.
- * Ignores hidden fields and applies required, email, number range and file rules.
+ * Ignores hidden fields and conditionally hidden fields (when values are provided),
+ * and applies required, email, number range and file rules.
  */
-export function buildZodSchema(resolved: ResolvedForm): ZodTypeAny {
+export function buildZodSchema(
+  resolved: ResolvedForm,
+  values?: Record<string, unknown>,
+): ZodTypeAny {
   const shape: Record<string, ZodTypeAny> = {};
 
   for (const item of resolved.items) {
     if (item.kind !== 'field') continue;
     const field = item.field;
     if (field.hidden) continue;
+    if (values && !isVisibilityConditionMet(field.visibilityCondition, values))
+      continue;
     shape[field.key] = schemaForField(field);
   }
 

@@ -65,6 +65,14 @@ function applyOverridesAndLocks(
         if (override.helpText !== undefined) field.helpText = override.helpText;
         if (override.required !== undefined) field.required = override.required;
         if (override.hidden !== undefined) field.hidden = override.hidden;
+        if (override.optionLayout !== undefined)
+          field.optionLayout = override.optionLayout;
+        if (override.visibilityCondition !== undefined) {
+          field.visibilityCondition =
+            override.visibilityCondition === null
+              ? undefined
+              : override.visibilityCondition;
+        }
       }
     }
 
@@ -90,6 +98,7 @@ function ownFieldToResolved(
     placeholder: field.placeholder,
     helpText: field.helpText,
     options: field.options ? [...field.options] : undefined,
+    optionLayout: field.optionLayout,
     validation: field.validation ? { ...field.validation } : undefined,
     required: field.required,
     hidden: field.hidden,
@@ -97,6 +106,9 @@ function ownFieldToResolved(
     sourceFormId: formId,
     locked,
     lockedByFormId: locked ? formId : undefined,
+    visibilityCondition: field.visibilityCondition
+      ? { ...field.visibilityCondition }
+      : undefined,
   };
 }
 
@@ -226,8 +238,11 @@ export function resolveForm(
     }
   }
 
-  // layoutColumns is per-form design, not inherited across the family.
-  settings.layoutColumns = chain[chain.length - 1]?.settings?.layoutColumns;
+  // layout/form width are per-form design, not inherited across the family.
+  const leafSettings = chain[chain.length - 1]?.settings;
+  settings.layoutColumns = leafSettings?.layoutColumns;
+  settings.mobileLayoutColumns = leafSettings?.mobileLayoutColumns;
+  settings.formWidth = leafSettings?.formWidth;
 
   return {
     formId: leafFormId,

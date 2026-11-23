@@ -91,64 +91,157 @@ import {
 } from '@/lib/builder/helpers';
 
 const PALETTE_ITEMS: PaletteItemDef[] = [
-  { kind: 'field', key: 'first_name', type: 'text', label: 'First Name' },
-  { kind: 'field', key: 'last_name', type: 'text', label: 'Last Name' },
-  { kind: 'field', key: 'email', type: 'email', label: 'Email' },
-  { kind: 'field', key: 'phone', type: 'phone', label: 'Phone' },
-  { kind: 'field', key: 'resume', type: 'file', label: 'Resume' },
+  // Generic fields (main)
+  { kind: 'field', type: 'text', label: 'Text' },
+  { kind: 'field', type: 'textarea', label: 'Long text' },
+  { kind: 'field', type: 'email', label: 'Email' },
+  { kind: 'field', type: 'phone', label: 'Phone' },
+  { kind: 'field', type: 'number', label: 'Number' },
+  { kind: 'field', type: 'currency', label: 'Currency' },
+  { kind: 'field', type: 'date', label: 'Date' },
+  { kind: 'field', type: 'time', label: 'Time' },
+  { kind: 'field', type: 'datetime', label: 'Date & time' },
+  { kind: 'field', type: 'daterange', label: 'Date range' },
+  { kind: 'field', type: 'select', label: 'Dropdown' },
+  { kind: 'field', type: 'multiselect', label: 'Multi-select dropdown' },
+  { kind: 'field', type: 'radio', label: 'Radio buttons' },
+  { kind: 'field', type: 'checkbox', label: 'Checkbox' },
+  { kind: 'field', type: 'checkbox_group', label: 'Checkbox group' },
+  { kind: 'field', type: 'toggle', label: 'Toggle / Switch' },
+  { kind: 'field', type: 'rating', label: 'Rating' },
+  { kind: 'field', type: 'slider', label: 'Slider' },
+  { kind: 'field', type: 'likert', label: 'Likert scale' },
+  { kind: 'field', type: 'file', label: 'File upload' },
+  { kind: 'field', type: 'file_multiple', label: 'Multiple file upload' },
+  { kind: 'field', type: 'signature', label: 'Signature' },
+  { kind: 'field', type: 'address_group', label: 'Address group' },
+  { kind: 'field', type: 'name_group', label: 'Name group' },
+  { kind: 'field', type: 'repeater', label: 'Repeater group' },
+  { kind: 'field', type: 'hidden', label: 'Hidden field' },
+
+  // Preset fields
+  {
+    kind: 'field',
+    key: 'first_name',
+    type: 'text',
+    label: 'First Name',
+    preset: true,
+  },
+  {
+    kind: 'field',
+    key: 'last_name',
+    type: 'text',
+    label: 'Last Name',
+    preset: true,
+  },
+  {
+    kind: 'field',
+    key: 'email',
+    type: 'email',
+    label: 'Email (preset)',
+    preset: true,
+  },
+  {
+    kind: 'field',
+    key: 'phone',
+    type: 'phone',
+    label: 'Phone (preset)',
+    preset: true,
+  },
+  { kind: 'field', key: 'resume', type: 'file', label: 'Resume', preset: true },
   {
     kind: 'field',
     key: 'current_company',
     type: 'text',
     label: 'Current Company',
+    preset: true,
   },
-  { kind: 'field', key: 'experience', type: 'number', label: 'Experience' },
-  { kind: 'field', key: 'current_ctc', type: 'currency', label: 'Current CTC' },
+  {
+    kind: 'field',
+    key: 'experience',
+    type: 'number',
+    label: 'Experience',
+    preset: true,
+  },
+  {
+    kind: 'field',
+    key: 'current_ctc',
+    type: 'currency',
+    label: 'Current CTC',
+    preset: true,
+  },
   {
     kind: 'field',
     key: 'expected_ctc',
     type: 'currency',
     label: 'Expected CTC',
+    preset: true,
   },
   {
     kind: 'field',
     key: 'notice_period',
     type: 'select',
     label: 'Notice Period',
+    preset: true,
   },
   {
     kind: 'field',
     key: 'current_location',
     type: 'text',
     label: 'Current Location',
+    preset: true,
   },
-  { kind: 'field', key: 'portfolio_url', type: 'text', label: 'Portfolio URL' },
-  { kind: 'field', key: 'github_url', type: 'text', label: 'GitHub URL' },
+  {
+    kind: 'field',
+    key: 'portfolio_url',
+    type: 'text',
+    label: 'Portfolio URL',
+    preset: true,
+  },
+  {
+    kind: 'field',
+    key: 'github_url',
+    type: 'text',
+    label: 'GitHub URL',
+    preset: true,
+  },
   {
     kind: 'field',
     key: 'data_consent',
     type: 'checkbox',
     label: 'Data Consent',
+    preset: true,
   },
-  { kind: 'field', key: 'tech_stack', type: 'select', label: 'Tech Stack' },
+  {
+    kind: 'field',
+    key: 'tech_stack',
+    type: 'select',
+    label: 'Tech Stack',
+    preset: true,
+  },
   {
     kind: 'field',
     key: 'cloud_platforms',
     type: 'select',
     label: 'Cloud Platforms',
+    preset: true,
   },
   {
     kind: 'field',
     key: 'oncall_comfort',
     type: 'radio',
     label: 'On-call Comfort',
+    preset: true,
   },
   {
     kind: 'field',
     key: 'testing_tools',
     type: 'select',
     label: 'Testing Tools',
+    preset: true,
   },
+
+  // Elements
   { kind: 'element', type: 'logo', label: 'Logo' },
   { kind: 'element', type: 'heading', label: 'Heading' },
   { kind: 'element', type: 'richtext', label: 'Rich text' },
@@ -345,23 +438,52 @@ export function BuilderEditor({ formId }: { formId: string }) {
   const addPaletteItem = (item: PaletteItemDef, insertAfter: string | null) => {
     if (!form || !draft) return;
     if (item.kind === 'field') {
-      if (!item.key) return;
-      if (existingFieldKeys.has(item.key)) {
+      let key = item.key;
+      if (!key) {
+        const base = item.type.replace(/[^a-z0-9]+/gi, '_').toLowerCase();
+        let n = 1;
+        key = `${base}_${nanoid(4)}`;
+        while (
+          existingFieldKeys.has(key) ||
+          draft.ownFields.some((f) => f.key === key)
+        ) {
+          key = `${base}_${nanoid(4)}_${n++}`;
+        }
+      }
+      if (item.key && existingFieldKeys.has(item.key)) {
         toast.error('This field is already in the form');
         return;
       }
-      const libDef = fieldsLib.find((f) => f.key === item.key);
+      const libDef = item.key
+        ? fieldsLib.find((f) => f.key === item.key)
+        : undefined;
       const own: OwnField = {
-        key: item.key,
+        key,
         label: libDef?.label ?? item.label,
         type: (libDef?.type ?? item.type) as FieldType,
         placeholder: '',
         helpText: '',
         options: libDef?.options
           ? [...libDef.options]
-          : item.type === 'select' || item.type === 'radio'
-            ? []
-            : undefined,
+          : [
+                'select',
+                'radio',
+                'checkbox_group',
+                'multiselect',
+                'likert',
+              ].includes(item.type)
+            ? item.type === 'likert'
+              ? [
+                  'Strongly disagree',
+                  'Disagree',
+                  'Neutral',
+                  'Agree',
+                  'Strongly agree',
+                ]
+              : ['Option 1', 'Option 2', 'Option 3']
+            : item.type === 'rating'
+              ? ['1', '2', '3', '4', '5']
+              : undefined,
         validation: libDef?.validation ? { ...libDef.validation } : undefined,
         required: false,
         hidden: false,
@@ -370,7 +492,7 @@ export function BuilderEditor({ formId }: { formId: string }) {
       const next = clone(draft);
       next.ownFields.push(own);
       applyEdit(next);
-      selectItem(item.key);
+      selectItem(key);
       setAnnounce(`Added ${own.label} to canvas`);
     } else {
       const id = `el_${item.type}_${nanoid(6)}`;
@@ -603,6 +725,7 @@ export function BuilderEditor({ formId }: { formId: string }) {
         helpText: undefined,
         required: undefined,
         hidden: undefined,
+        visibilityCondition: null,
       },
     };
     if (next.positionOverrides && key in next.positionOverrides) {
@@ -1078,6 +1201,7 @@ export function BuilderEditor({ formId }: { formId: string }) {
               form={form}
               draft={draft}
               selectedItem={selectedItem as ResolvedItem | null}
+              resolvedItems={resolved?.items ?? []}
               onUpdateOwnField={updateOwnField}
               onUpdateOwnElement={updateOwnElement}
               onSetElementOverride={setElementOverride}

@@ -15,12 +15,14 @@ import type {
   LayoutElement,
   OwnField,
   ResolvedItem,
+  VisibilityCondition,
 } from '@/types';
 
 export function BuilderPropertiesPanel({
   form,
   draft,
   selectedItem,
+  resolvedItems,
   onUpdateOwnField,
   onUpdateOwnElement,
   onSetElementOverride,
@@ -33,6 +35,7 @@ export function BuilderPropertiesPanel({
   form: FormRecord;
   draft: FormContent;
   selectedItem: ResolvedItem | null;
+  resolvedItems: ResolvedItem[];
   onUpdateOwnField: (
     key: string,
     patch: Partial<OwnField>,
@@ -72,6 +75,7 @@ export function BuilderPropertiesPanel({
               selectedItem.sourceFormId !== form.id ||
               selectedItem.origin === 'inherited'
             }
+            resolvedItems={resolvedItems}
             onUpdate={onUpdateOwnElement}
             onSetElementOverride={onSetElementOverride}
             onResetInherited={onResetInherited}
@@ -81,6 +85,7 @@ export function BuilderPropertiesPanel({
           <InheritedFieldProps
             field={selectedItem.field}
             draft={draft}
+            resolvedItems={resolvedItems}
             onSetOverride={onSetOverride}
             onResetInherited={onResetInherited}
             onToggleLock={onToggleLock}
@@ -89,6 +94,7 @@ export function BuilderPropertiesPanel({
           <OwnFieldProps
             fieldKey={selectedItem.field.key}
             draft={draft}
+            resolvedItems={resolvedItems}
             onUpdate={onUpdateOwnField}
             onToggleLock={onToggleLock}
             onRemove={onRemoveOwn}
@@ -135,10 +141,10 @@ export function BuilderPropertiesPanel({
             />
           </div>
           <div className="space-y-1">
-            <Label>Layout columns</Label>
+            <Label>Layout columns (desktop)</Label>
             <div>
               <SegmentedControl
-                ariaLabel="Layout columns"
+                ariaLabel="Desktop layout columns"
                 value={String(draft.settings.layoutColumns ?? 1)}
                 onValueChange={(v) =>
                   onUpdateSettings({
@@ -146,15 +152,53 @@ export function BuilderPropertiesPanel({
                   })
                 }
                 options={[
-                  { value: '1', label: '1 column' },
-                  { value: '2', label: '2 columns' },
-                  { value: '3', label: '3 columns' },
+                  { value: '1', label: '1 col' },
+                  { value: '2', label: '2 cols' },
+                  { value: '3', label: '3 cols' },
+                ]}
+              />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Layout columns (mobile)</Label>
+            <div>
+              <SegmentedControl
+                ariaLabel="Mobile layout columns"
+                value={String(draft.settings.mobileLayoutColumns ?? 1)}
+                onValueChange={(v) =>
+                  onUpdateSettings({
+                    mobileLayoutColumns: Number(v) as 1 | 2,
+                  })
+                }
+                options={[
+                  { value: '1', label: '1 col' },
+                  { value: '2', label: '2 cols' },
                 ]}
               />
             </div>
             <p className="text-muted-foreground text-xs">
-              Applies only to this form (not inherited).
+              Layout/width apply only to this form (not inherited).
             </p>
+          </div>
+          <div className="space-y-1">
+            <Label>Form width</Label>
+            <div>
+              <SegmentedControl
+                ariaLabel="Form width"
+                value={draft.settings.formWidth ?? 'narrow'}
+                onValueChange={(v) =>
+                  onUpdateSettings({
+                    formWidth: v as 'narrow' | 'medium' | 'wide' | 'full',
+                  })
+                }
+                options={[
+                  { value: 'narrow', label: 'Narrow' },
+                  { value: 'medium', label: 'Medium' },
+                  { value: 'wide', label: 'Wide' },
+                  { value: 'full', label: 'Full' },
+                ]}
+              />
+            </div>
           </div>
           <div className="space-y-1">
             <Label>About (rich text)</Label>
@@ -175,6 +219,7 @@ export function BuilderPropertiesPanel({
 function ElementProps({
   element,
   inherited,
+  resolvedItems,
   onUpdate,
   onSetElementOverride,
   onResetInherited,
@@ -184,6 +229,7 @@ function ElementProps({
   draft: FormContent;
   element: LayoutElement;
   inherited: boolean;
+  resolvedItems: ResolvedItem[];
   onUpdate: (
     id: string,
     patch: Partial<LayoutElement>,
@@ -276,6 +322,24 @@ function ElementProps({
         </div>
       ) : null}
       {own ? (
+        <VisibilityConditionEditor
+          value={element.visibilityCondition}
+          onChange={(visibilityCondition) =>
+            onUpdate(element.id, {
+              visibilityCondition,
+            } as Partial<LayoutElement>)
+          }
+          fields={resolvedItems
+            .filter((i) => i.kind === 'field')
+            .map((i) => ({
+              key: i.field.key,
+              label: i.field.label,
+              type: i.field.type,
+              options: i.field.options,
+            }))}
+        />
+      ) : null}
+      {own ? (
         <Button
           variant="outline"
           size="sm"
@@ -305,12 +369,14 @@ function ElementProps({
 function InheritedFieldProps({
   field,
   draft,
+  resolvedItems,
   onSetOverride,
   onResetInherited,
   onToggleLock,
 }: {
   field: any;
   draft: FormContent;
+  resolvedItems: ResolvedItem[];
   onSetOverride: (key: string, patch: Record<string, unknown>) => void;
   onResetInherited: (key: string) => void;
   onToggleLock: (id: string) => void;
@@ -355,6 +421,27 @@ function InheritedFieldProps({
           disabled={locked}
         />
       </div>
+      <VisibilityConditionEditor
+        value={
+          (override.visibilityCondition ?? field.visibilityCondition) as
+            VisibilityCondition | undefined
+        }
+        onChange={(visibilityCondition) =>
+          onSetOverride(field.key, {
+            visibilityCondition: visibilityCondition ?? null,
+          })
+        }
+        fields={resolvedItems
+          .filter((i) => i.kind === 'field')
+          .map((i) => ({
+            key: i.field.key,
+            label: i.field.label,
+            type: i.field.type,
+            options: i.field.options,
+          }))}
+        selfKey={field.key}
+        disabled={locked}
+      />
       <div className="flex items-center justify-between">
         <Label>Hidden</Label>
         <Switch
@@ -393,15 +480,163 @@ function InheritedFieldProps({
   );
 }
 
+function VisibilityConditionEditor({
+  value,
+  onChange,
+  fields,
+  selfKey,
+  disabled,
+}: {
+  value?: VisibilityCondition;
+  onChange: (next?: VisibilityCondition) => void;
+  fields: Array<{
+    key: string;
+    label: string;
+    type: string;
+    options?: string[];
+  }>;
+  selfKey?: string;
+  disabled?: boolean;
+}) {
+  const enabled = !!value;
+  const controllerOptions = fields.filter(
+    (f) =>
+      f.key !== selfKey && ['select', 'radio', 'checkbox'].includes(f.type),
+  );
+  const selected = controllerOptions.find((f) => f.key === value?.fieldKey);
+  const effectiveOptions =
+    selected?.type === 'checkbox'
+      ? ['true', 'false']
+      : (selected?.options ?? []);
+  return (
+    <div className="space-y-2 rounded-md border p-3">
+      <div className="flex items-center justify-between">
+        <Label>Conditional visibility</Label>
+        <Switch
+          checked={enabled}
+          disabled={disabled}
+          onCheckedChange={(checked) => {
+            if (!checked) onChange(undefined);
+            else {
+              const first = controllerOptions[0];
+              const firstOpts =
+                first?.type === 'checkbox'
+                  ? ['true', 'false']
+                  : (first?.options ?? []);
+              onChange({
+                fieldKey: first?.key ?? '',
+                operator: 'equals',
+                value: firstOpts[0] ?? '',
+              });
+            }
+          }}
+          aria-label="Enable conditional visibility"
+        />
+      </div>
+      {enabled && value ? (
+        controllerOptions.length === 0 ? (
+          <p className="text-muted-foreground text-xs">
+            Add a select, radio, or checkbox field to use as a condition
+            controller.
+          </p>
+        ) : (
+          <>
+            <div className="space-y-1">
+              <Label>Show when field</Label>
+              <select
+                className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm"
+                value={value.fieldKey}
+                disabled={disabled}
+                onChange={(e) => {
+                  const nextField = controllerOptions.find(
+                    (f) => f.key === e.target.value,
+                  );
+                  const nextOpts =
+                    nextField?.type === 'checkbox'
+                      ? ['true', 'false']
+                      : (nextField?.options ?? []);
+                  onChange({
+                    ...value,
+                    fieldKey: e.target.value,
+                    value: nextOpts[0] ?? '',
+                  });
+                }}
+              >
+                <option value="">Select field</option>
+                {controllerOptions.map((f) => (
+                  <option key={f.key} value={f.key}>
+                    {f.label} ({f.key})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label>Condition</Label>
+              <select
+                className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm"
+                value={value.operator}
+                disabled={disabled}
+                onChange={(e) =>
+                  onChange({
+                    ...value,
+                    operator: e.target.value as 'equals' | 'not_equals',
+                  })
+                }
+              >
+                <option value="equals">Equals</option>
+                <option value="not_equals">Not equals</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label>Value</Label>
+              {effectiveOptions.length > 0 ? (
+                <select
+                  className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm"
+                  value={value.value}
+                  disabled={disabled}
+                  onChange={(e) =>
+                    onChange({ ...value, value: e.target.value })
+                  }
+                >
+                  {effectiveOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <Input
+                  value={value.value}
+                  onChange={(e) =>
+                    onChange({ ...value, value: e.target.value })
+                  }
+                  placeholder="Value (e.g. Yes)"
+                  disabled={disabled}
+                />
+              )}
+            </div>
+          </>
+        )
+      ) : (
+        <p className="text-muted-foreground text-xs">
+          Show this item only when a condition is met (dynamic field/section).
+        </p>
+      )}
+    </div>
+  );
+}
+
 function OwnFieldProps({
   fieldKey,
   draft,
+  resolvedItems,
   onUpdate,
   onToggleLock,
   onRemove,
 }: {
   fieldKey: string;
   draft: FormContent;
+  resolvedItems: ResolvedItem[];
   onUpdate: (
     key: string,
     patch: Partial<OwnField>,
@@ -412,6 +647,14 @@ function OwnFieldProps({
 }) {
   const ownField = draft.ownFields.find((x) => x.key === fieldKey);
   if (!ownField) return <p className="text-sm">Field not found in draft.</p>;
+  const controllerFields = resolvedItems
+    .filter((i) => i.kind === 'field')
+    .map((i) => ({
+      key: i.field.key,
+      label: i.field.label,
+      type: i.field.type,
+      options: i.field.options,
+    }));
   return (
     <div className="space-y-3">
       <div className="text-sm font-medium">
@@ -456,6 +699,97 @@ function OwnFieldProps({
           }
         />
       </div>
+      {['select', 'radio', 'checkbox_group', 'multiselect', 'likert'].includes(
+        ownField.type,
+      ) ? (
+        <div className="space-y-2 rounded-md border p-3">
+          <div className="flex items-center justify-between">
+            <Label>Options</Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                onUpdate(fieldKey, {
+                  options: [
+                    ...(ownField.options ?? []),
+                    `Option ${(ownField.options?.length ?? 0) + 1}`,
+                  ],
+                })
+              }
+            >
+              Add option
+            </Button>
+          </div>
+          <div className="space-y-2">
+            {(ownField.options ?? []).map((opt, idx) => (
+              <div
+                key={`${fieldKey}-opt-${idx}`}
+                className="flex items-center gap-2"
+              >
+                <Input
+                  value={opt}
+                  onChange={(e) => {
+                    const next = [...(ownField.options ?? [])];
+                    next[idx] = e.target.value;
+                    onUpdate(
+                      fieldKey,
+                      { options: next },
+                      `field.${fieldKey}.options.${idx}`,
+                    );
+                  }}
+                  placeholder={`Option ${idx + 1}`}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={`Remove option ${opt || idx + 1}`}
+                  onClick={() => {
+                    const next = (ownField.options ?? []).filter(
+                      (_, i) => i !== idx,
+                    );
+                    onUpdate(fieldKey, { options: next });
+                  }}
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </div>
+            ))}
+            {(ownField.options ?? []).length === 0 ? (
+              <p className="text-muted-foreground text-xs">
+                Add options so users can select values.
+              </p>
+            ) : null}
+          </div>
+          {['radio', 'checkbox_group', 'likert'].includes(ownField.type) ? (
+            <div className="space-y-1">
+              <Label>Option layout</Label>
+              <SegmentedControl
+                ariaLabel="Option layout"
+                value={ownField.optionLayout ?? 'vertical'}
+                onValueChange={(v) =>
+                  onUpdate(fieldKey, {
+                    optionLayout: v as 'vertical' | 'horizontal',
+                  })
+                }
+                options={[
+                  { value: 'vertical', label: 'Vertical' },
+                  { value: 'horizontal', label: 'Horizontal' },
+                ]}
+              />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      <VisibilityConditionEditor
+        value={ownField.visibilityCondition}
+        onChange={(visibilityCondition) =>
+          onUpdate(fieldKey, { visibilityCondition } as Partial<OwnField>)
+        }
+        fields={controllerFields}
+        selfKey={fieldKey}
+      />
       <div className="flex items-center justify-between">
         <Label>Required</Label>
         <Switch

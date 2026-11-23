@@ -6,10 +6,25 @@
   | 'number'
   | 'currency'
   | 'date'
+  | 'time'
+  | 'datetime'
+  | 'daterange'
   | 'select'
+  | 'multiselect'
   | 'radio'
   | 'checkbox'
-  | 'file';
+  | 'checkbox_group'
+  | 'toggle'
+  | 'rating'
+  | 'slider'
+  | 'likert'
+  | 'file'
+  | 'file_multiple'
+  | 'signature'
+  | 'address_group'
+  | 'name_group'
+  | 'repeater'
+  | 'hidden';
 
 export interface FieldValidation {
   min?: number;
@@ -17,6 +32,12 @@ export interface FieldValidation {
   pattern?: string;
   maxFileSizeMb?: number;
   allowedFileTypes?: string[];
+}
+
+export interface VisibilityCondition {
+  fieldKey: string;
+  operator: 'equals' | 'not_equals';
+  value: string;
 }
 
 export interface FieldDefinition {
@@ -36,12 +57,14 @@ export interface OwnField {
   placeholder?: string;
   helpText?: string;
   options?: string[];
+  optionLayout?: 'vertical' | 'horizontal';
   /** Validation rules used by schema building and renderer constraints. */
   validation?: FieldValidation;
   required: boolean;
   hidden: boolean;
   /** `null` = end of form, `START_ANCHOR` ('__start__') = top */
   insertAfter: string | null;
+  visibilityCondition?: VisibilityCondition;
 }
 
 export interface FieldOverride {
@@ -50,6 +73,8 @@ export interface FieldOverride {
   helpText?: string;
   required?: boolean;
   hidden?: boolean;
+  optionLayout?: 'vertical' | 'horizontal';
+  visibilityCondition?: VisibilityCondition | null;
 }
 
 export interface ResolvedField {
@@ -59,6 +84,7 @@ export interface ResolvedField {
   placeholder?: string;
   helpText?: string;
   options?: string[];
+  optionLayout?: 'vertical' | 'horizontal';
   validation?: FieldValidation;
   required: boolean;
   hidden: boolean;
@@ -66,4 +92,5 @@ export interface ResolvedField {
   sourceFormId: string;
   locked: boolean;
   lockedByFormId?: string;
+  visibilityCondition?: VisibilityCondition;
 }
