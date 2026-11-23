@@ -234,7 +234,9 @@ export default function FamiliesPage() {
       let lockCount = 0;
       let ownCount = 0;
       try {
-        const chain = getDraftResolutionChain(forms as any, f.id);
+        const chain = getDraftResolutionChain(forms as any, f.id, {
+          allowAncestorDraftFallback: true,
+        });
         if (chain) {
           const resolved = resolveForm(chain.chain, chain.ids);
           for (const item of resolved.items) {
@@ -318,7 +320,9 @@ export default function FamiliesPage() {
     let inherited = 0,
       own = 0;
     try {
-      const chain = getDraftResolutionChain(forms as any, selected.id);
+      const chain = getDraftResolutionChain(forms as any, selected.id, {
+        allowAncestorDraftFallback: true,
+      });
       if (chain) {
         const resolved = resolveForm(chain.chain, chain.ids);
         for (const item of resolved.items) {

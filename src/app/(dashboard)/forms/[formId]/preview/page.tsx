@@ -88,6 +88,7 @@ export default function FormPreviewPage() {
     const chain = getDraftResolutionChain(
       forms.map((f) => (f.id === form.id ? { ...f, draft } : f)) as any,
       form.id,
+      { allowAncestorDraftFallback: true },
     );
     if (chain) resolved = resolveForm(chain.chain, chain.ids);
   } catch {

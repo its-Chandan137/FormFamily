@@ -663,7 +663,9 @@ export function BuilderEditor({ formId }: { formId: string }) {
           publishedVersionId: '__pending__',
         } as FormRecord;
         const simForms = forms.map((x) => (x.id === form.id ? simParent : x));
-        const beforeChain = getDraftResolutionChain(forms as any, id);
+        const beforeChain = getDraftResolutionChain(forms as any, id, {
+          allowAncestorDraftFallback: true,
+        });
         const dSim = simForms.find((x) => x.id === id)!;
         const dContent = dSim.draft ?? getPublishedContent(dSim);
         if (beforeChain && dContent) {
@@ -738,7 +740,9 @@ export function BuilderEditor({ formId }: { formId: string }) {
       let childPosition = 'In child form (own field)';
       try {
         if (d) {
-          const chain = getDraftResolutionChain(forms as any, d.id);
+          const chain = getDraftResolutionChain(forms as any, d.id, {
+            allowAncestorDraftFallback: true,
+          });
           if (chain) {
             const r = resolveForm(chain.chain, chain.ids);
             const idx = r.items.findIndex(

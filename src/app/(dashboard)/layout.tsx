@@ -8,7 +8,6 @@ import {
   Bell,
   ChevronDown,
   ChevronsUpDown,
-  Command,
   FileText,
   GitBranch,
   LayoutDashboard,
@@ -69,7 +68,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { resetDemoData } from '@/store/bootstrap';
-import { mockOrganization } from '@/data/mock/organizations';
 import { Avatar } from '@/components/shared/Avatar';
 import { Kbd } from '@/components/shared/Kbd';
 import { cn } from '@/lib/utils';
@@ -180,17 +178,29 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      const isEditable =
+        target?.isContentEditable ||
+        tag === 'input' ||
+        tag === 'textarea' ||
+        tag === 'select';
+
       const mod = e.metaKey || e.ctrlKey;
       if (mod && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setCmdOpen((o) => !o);
+        return;
       }
       if (mod && e.key.toLowerCase() === 'b') {
-        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
-        const editable = (e.target as HTMLElement)?.isContentEditable;
-        if (tag === 'input' || tag === 'textarea' || editable) return;
+        if (isEditable) return;
         e.preventDefault();
         setCollapsedManual((c) => !c);
+        return;
+      }
+      if (!mod && !e.altKey && e.key === '/' && !isEditable) {
+        e.preventDefault();
+        setCmdOpen(true);
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -441,6 +451,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <span className="hidden items-center gap-1 sm:inline-flex">
                 <Kbd>⌘</Kbd>
                 <Kbd>K</Kbd>
+                <span className="text-subtle px-0.5 text-xs">/</span>
+                <Kbd>/</Kbd>
               </span>
             </button>
 
@@ -533,7 +545,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             className={cn(
               'flex-1',
               pathname.includes('/edit')
-                ? 'p-0'
+                ? 'p-4 md:p-6 lg:p-8'
                 : pathname === '/families'
                   ? 'p-0 md:p-0 lg:p-0'
                   : 'p-4 md:p-6 lg:p-8',

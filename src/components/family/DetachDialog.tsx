@@ -43,6 +43,7 @@ export function DetachDialog({
       const chainInfo = getDraftResolutionChain(
         forms as unknown as import('@/types').FormRecord[],
         form.id,
+        { allowAncestorDraftFallback: true },
       );
       if (!chainInfo) throw new Error('Cannot resolve form for detach');
       const snapshot = snapshotInherited(chainInfo.chain, chainInfo.ids);
@@ -72,6 +73,7 @@ export function DetachDialog({
       const chainInfo = getDraftResolutionChain(
         forms as unknown as import('@/types').FormRecord[],
         form.id,
+        { allowAncestorDraftFallback: true },
       );
       if (!chainInfo) return 0;
       const resolved = resolveForm(chainInfo.chain, chainInfo.ids);

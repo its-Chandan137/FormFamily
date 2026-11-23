@@ -10,6 +10,7 @@ export function getPublishedContent(form: FormRecord): FormContent | null {
 export function getAncestorChain(
   forms: FormRecord[],
   formId: string,
+  options?: { allowAncestorDraftFallback?: boolean },
 ): { chain: FormContent[]; ids: string[] } | null {
   const form = forms.find((f) => f.id === formId);
   if (!form) return null;
@@ -20,8 +21,11 @@ export function getAncestorChain(
   for (const id of rootToParent) {
     const ancestor = forms.find((x) => x.id === id);
     if (!ancestor) return null;
-    const content = getPublishedContent(ancestor);
-    if (!content) return null; // ancestor must have published version for resolution context
+    const published = getPublishedContent(ancestor);
+    const content =
+      published ??
+      (options?.allowAncestorDraftFallback ? (ancestor.draft ?? null) : null);
+    if (!content) return null;
     chain.push(content);
     ids.push(id);
   }
@@ -47,12 +51,13 @@ export function getPublishedResolutionChain(
 export function getDraftResolutionChain(
   forms: FormRecord[],
   formId: string,
+  options?: { allowAncestorDraftFallback?: boolean },
 ): { chain: FormContent[]; ids: string[] } | null {
   const form = forms.find((f) => f.id === formId);
   if (!form) return null;
   const draft = form.draft ?? getPublishedContent(form);
   if (!draft) return null;
-  const ancestors = getAncestorChain(forms, formId);
+  const ancestors = getAncestorChain(forms, formId, options);
   if (!ancestors) {
     return { chain: [draft], ids: [formId] };
   }

@@ -124,6 +124,7 @@ export function DeleteFormDialog({
               const chainInfo = getDraftResolutionChain(
                 all as any,
                 childRec.id,
+                { allowAncestorDraftFallback: true },
               );
               if (chainInfo) {
                 const snap = snapshotInherited(chainInfo.chain, chainInfo.ids);

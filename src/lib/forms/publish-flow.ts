@@ -17,6 +17,7 @@ export function getChainForContent(
   forms: FormRecord[],
   formId: string,
   selfContent: FormContent,
+  options?: { allowAncestorDraftFallback?: boolean },
 ): { chain: FormContent[]; ids: string[] } | null {
   const ancestorIds = getAncestors(forms as unknown as Form[], formId)
     .slice()
@@ -26,7 +27,10 @@ export function getChainForContent(
   for (const id of ancestorIds) {
     const f = forms.find((x) => x.id === id);
     if (!f) return null;
-    const c = getPublishedContent(f);
+    const published = getPublishedContent(f);
+    const c =
+      published ??
+      (options?.allowAncestorDraftFallback ? (f.draft ?? null) : null);
     if (!c) return null;
     chain.push(c);
     ids.push(id);
@@ -41,7 +45,9 @@ export function resolveWithContent(
   formId: string,
   content: FormContent,
 ): ResolvedForm | null {
-  const info = getChainForContent(forms, formId, content);
+  const info = getChainForContent(forms, formId, content, {
+    allowAncestorDraftFallback: true,
+  });
   if (!info) return null;
   return resolveForm(info.chain, info.ids);
 }
