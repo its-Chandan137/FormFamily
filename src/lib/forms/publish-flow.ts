@@ -19,6 +19,7 @@ export function getChainForContent(
   selfContent: FormContent,
   options?: { allowAncestorDraftFallback?: boolean },
 ): { chain: FormContent[]; ids: string[] } | null {
+  const leaf = forms.find((x) => x.id === formId);
   const ancestorIds = getAncestors(forms as unknown as Form[], formId)
     .slice()
     .reverse(); // root->parent
@@ -27,8 +28,13 @@ export function getChainForContent(
   for (const id of ancestorIds) {
     const f = forms.find((x) => x.id === id);
     if (!f) return null;
+    const pinnedVersionId = leaf?.ancestorVersionPins?.[id];
+    const pinned = pinnedVersionId
+      ? (f.versions.find((v) => v.id === pinnedVersionId)?.content ?? null)
+      : null;
     const published = getPublishedContent(f);
     const c =
+      pinned ??
       published ??
       (options?.allowAncestorDraftFallback ? (f.draft ?? null) : null);
     if (!c) return null;

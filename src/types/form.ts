@@ -18,6 +18,8 @@ export interface FormSettings {
   about?: string;
   submitLabel?: string;
   successMessage?: string;
+  /** Per-form layout only; not inherited by children. */
+  layoutColumns?: 1 | 2 | 3;
 }
 
 export interface FormContent {
@@ -77,6 +79,11 @@ export interface FormRecord extends Form {
   versions: FormVersion[];
   /** Current editable draft content (unpublished changes). */
   draft: FormContent | null;
+  /**
+   * Pinned ancestor published versions for stable inheritance resolution.
+   * Existing children keep their pins; new children get pins at creation time.
+   */
+  ancestorVersionPins?: Record<string, string>;
   createdAt: string;
   updatedAt: string;
 }

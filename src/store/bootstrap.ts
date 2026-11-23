@@ -28,6 +28,27 @@ export interface PersistedDemoData {
   };
 }
 
+function normalizeFormPins(forms: PersistedDemoData['forms']) {
+  const byId = new Map(forms.map((f) => [f.id, f]));
+  return forms.map((form) => {
+    if (!form.parentFormId || form.ancestorVersionPins) return form;
+    const pins: Record<string, string> = {};
+    let current = form;
+    const seen = new Set<string>();
+    while (current.parentFormId && !seen.has(current.parentFormId)) {
+      seen.add(current.parentFormId);
+      const parent = byId.get(current.parentFormId);
+      if (!parent) break;
+      if (parent.publishedVersionId)
+        pins[parent.id] = parent.publishedVersionId;
+      current = parent;
+    }
+    return Object.keys(pins).length > 0
+      ? { ...form, ancestorVersionPins: pins }
+      : form;
+  });
+}
+
 export function selectPersistedDemoData(state: RootState): PersistedDemoData {
   return {
     forms: state.forms.items,
@@ -64,13 +85,18 @@ export const bootstrapApp = createAsyncThunk<
 >('app/bootstrap', async (_, { dispatch }) => {
   const persisted = loadPersistedState<PersistedDemoData>();
   if (persisted && persisted.forms && persisted.fields) {
-    await applyDemoData(persisted, dispatch);
+    const normalized: PersistedDemoData = {
+      ...persisted,
+      forms: normalizeFormPins(persisted.forms),
+    };
+    await applyDemoData(normalized, dispatch);
+    savePersistedState(normalized);
     return;
   }
 
   const initial = getInitialDemoState();
   const data: PersistedDemoData = {
-    forms: initial.forms,
+    forms: normalizeFormPins(initial.forms),
     fields: initial.fields,
     submissions: initial.submissions,
     ghl: initial.ghl,
@@ -87,7 +113,7 @@ export const resetDemoData = createAsyncThunk<
   clearPersistedState();
   const initial = getInitialDemoState();
   const data: PersistedDemoData = {
-    forms: initial.forms,
+    forms: normalizeFormPins(initial.forms),
     fields: initial.fields,
     submissions: initial.submissions,
     ghl: initial.ghl,

@@ -6,6 +6,18 @@ import type {
 } from '@/types';
 import { delay } from './delay';
 
+function getAncestorIds(forms: FormRecord[], formId: string): string[] {
+  const out: string[] = [];
+  let current = forms.find((f) => f.id === formId);
+  while (current?.parentFormId) {
+    const parent = forms.find((f) => f.id === current!.parentFormId);
+    if (!parent || out.includes(parent.id)) break;
+    out.push(parent.id);
+    current = parent;
+  }
+  return out;
+}
+
 export interface CreateFormInput {
   name: string;
   slug: string;
@@ -75,6 +87,19 @@ export function createInMemoryFormsRepository(
     async create(input) {
       return withDelay(() => {
         const now = new Date().toISOString();
+        const ancestorVersionPins: Record<string, string> = {};
+        if (input.parentFormId) {
+          const ancestorIds = [
+            input.parentFormId,
+            ...getAncestorIds(store, input.parentFormId),
+          ];
+          for (const ancestorId of ancestorIds) {
+            const ancestor = store.find((f) => f.id === ancestorId);
+            if (ancestor?.publishedVersionId) {
+              ancestorVersionPins[ancestorId] = ancestor.publishedVersionId;
+            }
+          }
+        }
         const form: FormRecord = {
           id: input.slug
             ? `form_${input.slug.replace(/[^a-z0-9]+/gi, '_')}_${Date.now()}`
@@ -92,6 +117,9 @@ export function createInMemoryFormsRepository(
             overrides: {},
             locks: [],
           },
+          ...(Object.keys(ancestorVersionPins).length > 0
+            ? { ancestorVersionPins }
+            : {}),
           createdAt: now,
           updatedAt: now,
         };

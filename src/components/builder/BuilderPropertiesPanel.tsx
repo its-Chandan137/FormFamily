@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { RichTextEditor } from '@/components/builder/RichTextEditor';
+import { SegmentedControl } from '@/components/shared/SegmentedControl';
 import type {
   FormContent,
   FormRecord,
@@ -132,6 +133,28 @@ export function BuilderPropertiesPanel({
                 )
               }
             />
+          </div>
+          <div className="space-y-1">
+            <Label>Layout columns</Label>
+            <div>
+              <SegmentedControl
+                ariaLabel="Layout columns"
+                value={String(draft.settings.layoutColumns ?? 1)}
+                onValueChange={(v) =>
+                  onUpdateSettings({
+                    layoutColumns: Number(v) as 1 | 2 | 3,
+                  })
+                }
+                options={[
+                  { value: '1', label: '1 column' },
+                  { value: '2', label: '2 columns' },
+                  { value: '3', label: '3 columns' },
+                ]}
+              />
+            </div>
+            <p className="text-muted-foreground text-xs">
+              Applies only to this form (not inherited).
+            </p>
           </div>
           <div className="space-y-1">
             <Label>About (rich text)</Label>

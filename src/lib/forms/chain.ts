@@ -21,8 +21,14 @@ export function getAncestorChain(
   for (const id of rootToParent) {
     const ancestor = forms.find((x) => x.id === id);
     if (!ancestor) return null;
+    const pinnedVersionId = form.ancestorVersionPins?.[id];
+    const pinned = pinnedVersionId
+      ? (ancestor.versions.find((v) => v.id === pinnedVersionId)?.content ??
+        null)
+      : null;
     const published = getPublishedContent(ancestor);
     const content =
+      pinned ??
       published ??
       (options?.allowAncestorDraftFallback ? (ancestor.draft ?? null) : null);
     if (!content) return null;

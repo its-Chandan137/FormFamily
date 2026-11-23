@@ -90,6 +90,8 @@ export function FormRenderer({
     index: number,
   ) => {
     const { element } = item;
+    const fullSpan =
+      (resolved.settings.layoutColumns ?? 1) > 1 ? 'md:col-span-full' : '';
     switch (element.type) {
       case 'logo': {
         const src = String(
@@ -99,7 +101,10 @@ export function FormRenderer({
           element.props.alt ?? resolved.settings.companyName ?? 'Logo',
         );
         return (
-          <div key={element.id + index} className="flex justify-start">
+          <div
+            key={element.id + index}
+            className={cn('flex justify-start', fullSpan)}
+          >
             {src ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={src} alt={alt} className="h-12 w-auto object-contain" />
@@ -113,7 +118,10 @@ export function FormRenderer({
       }
       case 'heading':
         return (
-          <h2 key={element.id + index} className="text-xl font-semibold">
+          <h2
+            key={element.id + index}
+            className={cn('text-xl font-semibold', fullSpan)}
+          >
             {String(element.props.text ?? resolved.settings.companyName ?? '')}
           </h2>
         );
@@ -121,17 +129,25 @@ export function FormRenderer({
         return (
           <div
             key={element.id + index}
-            className="prose prose-sm text-muted-foreground max-w-none"
+            className={cn(
+              'prose prose-sm text-muted-foreground max-w-none',
+              fullSpan,
+            )}
             dangerouslySetInnerHTML={{
               __html: sanitizeHtml(String(element.props.html ?? '')),
             }}
           />
         );
       case 'divider':
-        return <hr key={element.id + index} className="border-border" />;
+        return (
+          <hr
+            key={element.id + index}
+            className={cn('border-border', fullSpan)}
+          />
+        );
       case 'section':
         return (
-          <div key={element.id + index} className="pt-2">
+          <div key={element.id + index} className={cn('pt-2', fullSpan)}>
             <h3 className="text-base font-medium">
               {String(element.props.title ?? '')}
             </h3>
@@ -353,7 +369,15 @@ export function FormRenderer({
           }}
         />
       ) : null}
-      <div className="space-y-5">
+      <div
+        className={cn(
+          resolved.settings.layoutColumns === 2
+            ? 'grid grid-cols-1 gap-5 md:grid-cols-2'
+            : resolved.settings.layoutColumns === 3
+              ? 'grid grid-cols-1 gap-5 md:grid-cols-3'
+              : 'space-y-5',
+        )}
+      >
         {resolved.items.map((item, idx) =>
           item.kind === 'element'
             ? renderElement(item, idx)

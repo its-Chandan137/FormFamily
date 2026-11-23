@@ -39,11 +39,12 @@ Root Form (level 1)
 
 Each form stores only its own contribution (custom fields, overrides, settings, locks). The final resolved form is computed by merging from root to leaf.
 
-#### 3. Downward Propagation Only
+#### 3. Inheritance Version Pinning (Existing vs New Children)
 
-- Editing a parent changes all descendants
-- Editing a child never changes its parent or siblings
-- Example: Changing Backend updates DevOps but not Frontend
+- New child forms capture ancestor published-version pins at creation time.
+- Existing child forms continue resolving against their pinned ancestor versions, so parent updates do not retroactively change already-created children.
+- Newly created child forms after a parent update inherit the updated published content (through their new pins).
+- Editing a child never changes its parent or siblings.
 
 #### 4. Child Capabilities
 
@@ -72,9 +73,9 @@ A parent can lock a field (e.g., legal consent checkbox). Locked fields:
 - Cannot be made optional in descendants
 - Locks propagate down the entire subtree
 
-#### 7. Published Versions Only
+#### 7. Published Versions and Pinned Resolution
 
-A child resolves against its ancestors' published versions, never their drafts. Each form has one draft and a list of published versions.
+A child resolves against ancestor published versions. For stability, child forms use `ancestorVersionPins` (captured at creation/normalization) to resolve against pinned ancestor published versions. Drafts are never used as published inheritance unless explicitly allowed by draft-preview fallback logic.
 
 #### 8. Impact Preview
 

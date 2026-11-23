@@ -226,6 +226,9 @@ export function resolveForm(
     }
   }
 
+  // layoutColumns is per-form design, not inherited across the family.
+  settings.layoutColumns = chain[chain.length - 1]?.settings?.layoutColumns;
+
   return {
     formId: leafFormId,
     settings,
