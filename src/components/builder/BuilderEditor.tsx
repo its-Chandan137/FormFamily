@@ -1194,7 +1194,7 @@ export function BuilderEditor({ formId }: { formId: string }) {
         width of at least 1024px.
       </div>
 
-      <div className="hidden min-h-0 flex-1 lg:flex">
+      <div className="hidden min-h-0 flex-1 flex-col overflow-hidden lg:flex">
         <DndContext
           sensors={sensors}
           collisionDetection={pointerWithin}
@@ -1204,8 +1204,8 @@ export function BuilderEditor({ formId }: { formId: string }) {
           onDragCancel={onDragCancel}
           autoScroll={{ threshold: { x: 0.15, y: 0.15 } }}
         >
-          <div className="flex min-h-0 min-w-0 flex-1 gap-3 p-3 md:gap-4 md:p-4">
-            <div className="w-[260px] shrink-0 xl:w-[270px]">
+          <div className="flex h-full min-h-0 min-w-0 flex-1 items-stretch gap-3 overflow-hidden p-3 md:gap-4 md:p-4">
+            <div className="flex h-full min-h-0 w-[260px] shrink-0 flex-col overflow-hidden xl:w-[270px]">
               <BuilderPalette
                 items={PALETTE_ITEMS}
                 existingFieldKeys={existingFieldKeys}
@@ -1213,7 +1213,7 @@ export function BuilderEditor({ formId }: { formId: string }) {
               />
             </div>
 
-            <div className="min-h-0 min-w-[550px] flex-1">
+            <div className="flex h-full min-h-0 min-w-[550px] flex-1 flex-col overflow-hidden">
               <BuilderCanvas
                 formId={form.id}
                 form={form}
@@ -1248,7 +1248,7 @@ export function BuilderEditor({ formId }: { formId: string }) {
               />
             </div>
 
-            <div className="w-[235px] shrink-0 xl:w-[245px]">
+            <div className="flex h-full min-h-0 w-[235px] shrink-0 flex-col overflow-hidden xl:w-[245px]">
               <BuilderPropertiesPanel
                 form={form}
                 draft={draft}

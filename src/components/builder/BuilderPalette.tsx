@@ -82,59 +82,6 @@ function DraggablePaletteItem({
   );
 }
 
-function CategorySection({
-  category,
-  collapsed,
-  onToggle,
-  existingFieldKeys,
-  onAdd,
-}: {
-  category: CategoryDef;
-  collapsed: boolean;
-  onToggle: () => void;
-  existingFieldKeys: Set<string>;
-  onAdd: (item: PaletteItemDef) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <button
-        type="button"
-        className="flex w-full items-center justify-between px-1 text-left"
-        onClick={onToggle}
-        aria-expanded={!collapsed}
-      >
-        <span className="dark:text-muted-foreground text-[12px] font-semibold tracking-wide text-[#4B587C] uppercase">
-          {category.title}
-        </span>
-        <ChevronDown
-          className={cn(
-            'size-4 text-[#75809A] transition-transform',
-            collapsed && '-rotate-90',
-          )}
-        />
-      </button>
-      {!collapsed ? (
-        <div className="space-y-1.5">
-          {category.items.map((item) => {
-            const disabled =
-              item.kind === 'field' &&
-              !!item.key &&
-              existingFieldKeys.has(item.key);
-            return (
-              <DraggablePaletteItem
-                key={`${item.kind}:${item.key ?? item.type}`}
-                item={item}
-                disabled={disabled}
-                onAdd={() => onAdd(item)}
-              />
-            );
-          })}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 const BASIC_TYPES = new Set([
   'text',
   'textarea',
@@ -261,7 +208,7 @@ export function BuilderPalette({
   onAdd: (item: PaletteItemDef) => void;
 }) {
   const [query, setQuery] = useState('');
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [openCategory, setOpenCategory] = useState<string>('basic');
 
   const categories = useMemo(() => categorize(items), [items]);
   const filtered = useMemo(() => {
@@ -276,6 +223,9 @@ export function BuilderPalette({
       }))
       .filter((c) => c.items.length > 0);
   }, [categories, query]);
+
+  const activeCategory =
+    filtered.find((c) => c.id === openCategory)?.id ?? filtered[0]?.id ?? null;
 
   return (
     <aside className="dark:border-border dark:bg-card flex h-full min-h-0 flex-col rounded-xl border border-[#E5E9F2] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
@@ -294,24 +244,63 @@ export function BuilderPalette({
           />
         </div>
       </div>
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-3 py-4">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {filtered.length === 0 ? (
-          <p className="px-1 text-sm text-[#75809A]">
+          <p className="px-4 py-4 text-sm text-[#75809A]">
             No fields match your search.
           </p>
         ) : (
-          filtered.map((category) => (
-            <CategorySection
-              key={category.id}
-              category={category}
-              collapsed={!!collapsed[category.id] && !query.trim()}
-              onToggle={() =>
-                setCollapsed((s) => ({ ...s, [category.id]: !s[category.id] }))
-              }
-              existingFieldKeys={existingFieldKeys}
-              onAdd={onAdd}
-            />
-          ))
+          <>
+            {filtered.map((category) => {
+              const isOpen = category.id === activeCategory;
+              return (
+                <div
+                  key={category.id}
+                  className={cn('flex min-h-0 flex-col', isOpen && 'flex-1')}
+                >
+                  <button
+                    type="button"
+                    className={cn(
+                      'dark:border-border flex w-full items-center justify-between border-b border-[#E5E9F2] px-4 py-3 text-left transition-colors',
+                      isOpen
+                        ? 'dark:bg-accent/20 bg-[#F7F8FF]'
+                        : 'dark:hover:bg-accent/10 hover:bg-slate-50',
+                    )}
+                    onClick={() => setOpenCategory(category.id)}
+                    aria-expanded={isOpen}
+                  >
+                    <span className="dark:text-muted-foreground text-[12px] font-semibold tracking-wide text-[#4B587C] uppercase">
+                      {category.title}
+                    </span>
+                    <ChevronDown
+                      className={cn(
+                        'size-4 text-[#75809A] transition-transform',
+                        !isOpen && '-rotate-90',
+                      )}
+                    />
+                  </button>
+                  {isOpen ? (
+                    <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto px-3 py-3">
+                      {category.items.map((item) => {
+                        const disabled =
+                          item.kind === 'field' &&
+                          !!item.key &&
+                          existingFieldKeys.has(item.key);
+                        return (
+                          <DraggablePaletteItem
+                            key={`${item.kind}:${item.key ?? item.type}`}
+                            item={item}
+                            disabled={disabled}
+                            onAdd={() => onAdd(item)}
+                          />
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </>
         )}
       </div>
     </aside>

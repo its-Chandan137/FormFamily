@@ -392,9 +392,21 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     </div>
   );
 
+  const isEditRoute = pathname.includes('/edit');
+
   return (
-    <div className="bg-background text-foreground min-h-screen">
-      <div className="flex min-h-screen">
+    <div
+      className={cn(
+        'bg-background text-foreground',
+        isEditRoute ? 'h-screen overflow-hidden' : 'min-h-screen',
+      )}
+    >
+      <div
+        className={cn(
+          'flex',
+          isEditRoute ? 'h-screen overflow-hidden' : 'min-h-screen',
+        )}
+      >
         <aside
           className={cn(
             'border-border bg-surface sticky top-0 hidden h-screen shrink-0 border-r transition-[width] duration-200 md:block',
@@ -404,7 +416,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           {sidebarContent(collapsed)}
         </aside>
 
-        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+        <div
+          className={cn(
+            'flex min-w-0 flex-1 flex-col',
+            isEditRoute ? 'h-screen overflow-hidden' : 'min-h-screen',
+          )}
+        >
           <header className="border-border bg-surface/95 supports-[backdrop-filter]:bg-surface/80 sticky top-0 z-30 flex h-14 items-center gap-2 border-b px-3 backdrop-blur md:px-4">
             <Button
               variant="ghost"
