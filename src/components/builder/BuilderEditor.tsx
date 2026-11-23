@@ -19,9 +19,23 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { nanoid } from 'nanoid';
 import { toast } from 'sonner';
-import { Eye, History, Monitor, Redo2, Smartphone, Undo2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Eye,
+  History,
+  MoreHorizontal,
+  Redo2,
+  Save,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -287,6 +301,11 @@ export function BuilderEditor({ formId }: { formId: string }) {
   const [createChildOpen, setCreateChildOpen] = useState(false);
   const [detachOpen, setDetachOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [canvasTab, setCanvasTab] = useState<
+    'build' | 'settings' | 'integrations'
+  >('build');
+  const [zoom, setZoom] = useState(100);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedJson = useRef<string>('');
@@ -1012,143 +1031,170 @@ export function BuilderEditor({ formId }: { formId: string }) {
     resolved?.items.find((i) => getItemId(i) === activeId) ?? null;
   const previewResolved = resolved;
 
+  const onDuplicateSelected = () => {
+    if (!draft || !selectedItem) return;
+    const next = clone(draft);
+    if (selectedItem.kind === 'field') {
+      const src = next.ownFields.find((f) => f.key === selectedItem.field.key);
+      if (!src) return;
+      let key = `${src.key}_copy_${nanoid(4)}`;
+      while (
+        existingFieldKeys.has(key) ||
+        next.ownFields.some((f) => f.key === key)
+      ) {
+        key = `${src.key}_copy_${nanoid(4)}`;
+      }
+      next.ownFields.push({
+        ...clone(src),
+        key,
+        label: `${src.label} copy`,
+        insertAfter: src.key,
+      });
+      applyEdit(next);
+      selectItem(key);
+      setAnnounce(`Duplicated ${src.label}`);
+    } else {
+      const src = next.elements.find((e) => e.id === selectedItem.element.id);
+      if (!src) return;
+      const id = `el_${src.type}_${nanoid(6)}`;
+      next.elements.push({
+        ...clone(src),
+        id,
+        insertAfter: src.id,
+        props: { ...(src.props ?? {}) },
+      });
+      applyEdit(next);
+      selectItem(id);
+      setAnnounce(`Duplicated ${resolvedItemLabel(selectedItem)}`);
+    }
+  };
+
+  const formStatus = getFormStatus(form);
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="text-muted-foreground text-xs">Builder</div>
-          <h1 className="text-xl font-semibold">{form.name}</h1>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            {(() => {
-              const status = getFormStatus(form);
-              if (status === 'unpublished_changes') {
-                return (
-                  <Badge variant="secondary">
-                    {getFormStatusLabel(status)}
-                  </Badge>
-                );
-              }
-              if (status === 'draft') {
-                return (
-                  <Badge variant="outline">{getFormStatusLabel(status)}</Badge>
-                );
-              }
-              return <Badge>Up to date</Badge>;
-            })()}
-            <AutosaveIndicator
-              status={builder.autosaveStatus}
-              lastSavedAt={builder.lastSavedAt}
-              error={builder.autosaveError}
-              onRetry={doRetrySave}
-              onTriggerDebugError={triggerDebugSaveError}
-            />
+    <div
+      className={cn(
+        'dark:bg-background flex min-h-0 flex-1 flex-col bg-[#F7F8FC]',
+        isFullscreen && 'fixed inset-0 z-50',
+      )}
+    >
+      <div className="dark:bg-card border-b bg-white px-4 py-3 md:px-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <Link
+                href="/forms"
+                className="text-muted-foreground hover:text-foreground dark:bg-card inline-flex size-9 items-center justify-center rounded-md border bg-white transition-colors hover:bg-slate-50"
+                aria-label="Back to forms"
+              >
+                <ArrowLeft className="size-4" />
+              </Link>
+              <div className="min-w-0">
+                <h1 className="dark:text-foreground truncate text-lg font-semibold tracking-tight text-[#17213D]">
+                  {form.name}
+                </h1>
+                <p className="text-sm text-[#75809A]">
+                  Build your form with ease
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={`/forms/${form.id}/preview`}
+              className={cn(
+                buttonVariants({ variant: 'outline', size: 'default' }),
+                'h-10 gap-2 border-[#E5E9F2] bg-white text-[#17213D] hover:bg-slate-50',
+              )}
+            >
+              <Eye className="size-4" />
+              Preview
+            </Link>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 gap-2 border-[#E5E9F2] bg-white text-[#17213D] hover:bg-slate-50"
+              onClick={doRetrySave}
+              disabled={builder.autosaveStatus === 'saving'}
+            >
+              <Save className="size-4" />
+              Save Draft
+            </Button>
+            <Button
+              type="button"
+              className="h-10 gap-2 bg-[#5945F5] text-white hover:bg-[#4A39D6]"
+              onClick={startPublish}
+            >
+              Publish Form
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="inline-flex size-10 items-center justify-center rounded-md border border-[#E5E9F2] bg-white text-sm hover:bg-slate-50"
+                aria-label="More actions"
+              >
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem onClick={() => setHistoryOpen(true)}>
+                  <History className="mr-2 size-4" /> Version history
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setCreateChildOpen(true)}>
+                  Create child form
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setDetachOpen(true)}
+                  disabled={!form.parentFormId}
+                >
+                  Detach from parent
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={triggerDebugSaveError}>
+                  Simulate save error (debug)
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => setDeleteOpen(true)}
+                >
+                  Delete form
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => dispatch(undo())}
-            disabled={builder.past.length === 0}
-            aria-label="Undo (Ctrl+Z)"
-          >
-            <Undo2 className="mr-1 size-4" />
-            Undo
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => dispatch(redo())}
-            disabled={builder.future.length === 0}
-            aria-label="Redo (Ctrl+Shift+Z)"
-          >
-            <Redo2 className="mr-1 size-4" />
-            Redo
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setHistoryOpen(true)}
-          >
-            <History className="mr-1 size-4" />
-            History
-          </Button>
-          <div
-            className="flex items-center rounded-md border p-0.5"
-            role="group"
-            aria-label="Preview width"
-          >
-            <Button
-              type="button"
-              size="sm"
-              variant={
-                builder.previewMode === 'desktop' ? 'secondary' : 'ghost'
-              }
-              onClick={() => dispatch(setPreviewMode('desktop'))}
-              aria-label="Desktop preview"
-            >
-              <Monitor className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={builder.previewMode === 'mobile' ? 'secondary' : 'ghost'}
-              onClick={() => dispatch(setPreviewMode('mobile'))}
-              aria-label="Mobile preview"
-            >
-              <Smartphone className="size-4" />
-            </Button>
-          </div>
-          <Link
-            href={`/forms/${form.id}/preview`}
-            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
-          >
-            <Eye className="mr-1 size-4" />
-            Full preview
-          </Link>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setCreateChildOpen(true)}
-          >
-            Create child
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setDetachOpen(true)}
-            disabled={!form.parentFormId}
-          >
-            Detach
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setDeleteOpen(true)}
-          >
-            Delete
-          </Button>
-          <Button type="button" size="sm" onClick={startPublish}>
-            Publish
-          </Button>
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+          {formStatus === 'unpublished_changes' ? (
+            <Badge variant="secondary" className="rounded-md">
+              Unpublished changes
+            </Badge>
+          ) : formStatus === 'draft' ? (
+            <Badge variant="outline" className="rounded-md">
+              Draft
+            </Badge>
+          ) : (
+            <Badge className="rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
+              Up to date
+            </Badge>
+          )}
+          <AutosaveIndicator
+            status={builder.autosaveStatus}
+            lastSavedAt={builder.lastSavedAt}
+            error={builder.autosaveError}
+            onRetry={doRetrySave}
+            onTriggerDebugError={triggerDebugSaveError}
+          />
         </div>
       </div>
 
       <div
-        className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 lg:hidden dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200"
+        className="mx-4 mt-3 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 lg:hidden dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200"
         role="status"
       >
         Use a larger screen to edit this form. The builder requires a viewport
         width of at least 1024px.
       </div>
 
-      <div className="hidden lg:block">
+      <div className="hidden min-h-0 flex-1 lg:flex">
         <DndContext
           sensors={sensors}
           collisionDetection={pointerWithin}
@@ -1158,63 +1204,72 @@ export function BuilderEditor({ formId }: { formId: string }) {
           onDragCancel={onDragCancel}
           autoScroll={{ threshold: { x: 0.15, y: 0.15 } }}
         >
-          <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)_320px] xl:grid-cols-[280px_minmax(0,1fr)_340px]">
-            <BuilderPalette
-              items={PALETTE_ITEMS}
-              existingFieldKeys={existingFieldKeys}
-              onAdd={onAddClick}
-            />
-            <div className="space-y-4">
+          <div className="flex min-h-0 min-w-0 flex-1 gap-3 p-3 md:gap-4 md:p-4">
+            <div className="w-[260px] shrink-0 xl:w-[270px]">
+              <BuilderPalette
+                items={PALETTE_ITEMS}
+                existingFieldKeys={existingFieldKeys}
+                onAdd={onAddClick}
+              />
+            </div>
+
+            <div className="min-h-0 min-w-[550px] flex-1">
               <BuilderCanvas
                 formId={form.id}
+                form={form}
+                draft={draft}
                 items={resolved?.items ?? []}
                 selectedId={builder.selectedItemId}
                 onSelect={selectItem}
                 onRemoveOwn={removeOwn}
+                onDuplicateSelected={onDuplicateSelected}
                 dragActive={!!activeId}
                 overId={overId}
+                canvasTab={canvasTab}
+                onCanvasTabChange={setCanvasTab}
+                zoom={zoom}
+                onZoomChange={setZoom}
+                isFullscreen={isFullscreen}
+                onToggleFullscreen={() => setIsFullscreen((v) => !v)}
+                canUndo={builder.past.length > 0}
+                canRedo={builder.future.length > 0}
+                onUndo={() => dispatch(undo())}
+                onRedo={() => dispatch(redo())}
+                previewMode={builder.previewMode}
+                onPreviewModeChange={(m) => dispatch(setPreviewMode(m))}
+                onUpdateSettings={updateSettings}
+                previewResolved={previewResolved as any}
+                onAddSection={() =>
+                  addPaletteItem(
+                    { kind: 'element', type: 'section', label: 'Section' },
+                    null,
+                  )
+                }
               />
-              {previewResolved ? (
-                <div
-                  className={cn(
-                    'rounded-lg border p-4',
-                    builder.previewMode === 'mobile'
-                      ? 'mx-auto max-w-[375px]'
-                      : 'w-full',
-                  )}
-                >
-                  <div className="text-muted-foreground mb-3 text-xs font-medium tracking-wide uppercase">
-                    Live preview ({builder.previewMode})
-                  </div>
-                  <FormRenderer
-                    resolved={previewResolved as any}
-                    onSubmit={() => {}}
-                    disableSubmit
-                    submitLabel={
-                      previewResolved.settings.submitLabel ?? 'Submit'
-                    }
-                  />
-                </div>
-              ) : null}
             </div>
-            <BuilderPropertiesPanel
-              form={form}
-              draft={draft}
-              selectedItem={selectedItem as ResolvedItem | null}
-              resolvedItems={resolved?.items ?? []}
-              onUpdateOwnField={updateOwnField}
-              onUpdateOwnElement={updateOwnElement}
-              onSetElementOverride={setElementOverride}
-              onSetOverride={setOverride}
-              onResetInherited={resetInherited}
-              onToggleLock={toggleLock}
-              onRemoveOwn={removeOwn}
-              onUpdateSettings={updateSettings}
-            />
+
+            <div className="w-[235px] shrink-0 xl:w-[245px]">
+              <BuilderPropertiesPanel
+                form={form}
+                draft={draft}
+                selectedItem={selectedItem as ResolvedItem | null}
+                resolvedItems={resolved?.items ?? []}
+                onUpdateOwnField={updateOwnField}
+                onUpdateOwnElement={updateOwnElement}
+                onSetElementOverride={setElementOverride}
+                onSetOverride={setOverride}
+                onResetInherited={resetInherited}
+                onToggleLock={toggleLock}
+                onRemoveOwn={removeOwn}
+                onUpdateSettings={updateSettings}
+                onClose={() => selectItem(null)}
+                onDuplicateSelected={onDuplicateSelected}
+              />
+            </div>
           </div>
           <DragOverlay dropAnimation={null}>
             {activeId ? (
-              <div className="bg-background rounded-md border px-3 py-2 text-sm shadow-lg">
+              <div className="rounded-md border bg-white px-3 py-2 text-sm shadow-lg">
                 {activeId.startsWith('palette:')
                   ? 'Adding item…'
                   : activeItem

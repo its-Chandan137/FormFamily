@@ -1,9 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Eye } from 'lucide-react';
-import { buttonVariants } from '@/components/ui/button';
+import { ArrowLeft, Eye, Monitor, Smartphone } from 'lucide-react';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { FormRenderer } from '@/components/renderer/FormRenderer';
@@ -42,6 +43,9 @@ export default function FormPreviewPage() {
   const initialized = useAppSelector((s) => s.ui.initialized);
   const error = useAppSelector((s) => s.ui.error);
   const form = forms.find((f) => f.id === formId) ?? null;
+  const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>(
+    'desktop',
+  );
 
   if (!initialized && !error) {
     return (
@@ -96,7 +100,7 @@ export default function FormPreviewPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4">
+    <div className="mx-auto max-w-5xl space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href={`/forms/${form.id}/edit`}
@@ -105,9 +109,35 @@ export default function FormPreviewPage() {
           <ArrowLeft className="mr-2 size-4" />
           Back to builder
         </Link>
-        <div className="text-muted-foreground flex items-center gap-2 text-sm">
-          <Eye className="size-4" />
-          Applicant preview
+        <div className="flex items-center gap-3">
+          <div className="text-muted-foreground hidden items-center gap-2 text-sm sm:flex">
+            <Eye className="size-4" />
+            Applicant preview
+          </div>
+          <div className="bg-background flex items-center rounded-md border p-0.5">
+            <Button
+              type="button"
+              size="sm"
+              variant={previewMode === 'desktop' ? 'secondary' : 'ghost'}
+              onClick={() => setPreviewMode('desktop')}
+              aria-label="Desktop preview"
+              className="gap-1.5"
+            >
+              <Monitor className="size-4" />
+              Desktop
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={previewMode === 'mobile' ? 'secondary' : 'ghost'}
+              onClick={() => setPreviewMode('mobile')}
+              aria-label="Mobile preview"
+              className="gap-1.5"
+            >
+              <Smartphone className="size-4" />
+              Mobile
+            </Button>
+          </div>
         </div>
       </div>
       <div className="border-border bg-muted/40 rounded-md border p-4">
@@ -118,12 +148,18 @@ export default function FormPreviewPage() {
         </p>
       </div>
       {resolved ? (
-        <div className="bg-background rounded-lg border p-4 sm:p-8">
+        <div
+          className={cn(
+            'bg-background rounded-lg border p-4 sm:p-8',
+            previewMode === 'mobile' ? 'mx-auto max-w-[390px]' : 'w-full',
+          )}
+        >
           <FormRenderer
             resolved={resolved}
             onSubmit={() => {}}
             disableSubmit
             submitLabel="Submit (preview disabled)"
+            previewMode={previewMode}
           />
         </div>
       ) : (

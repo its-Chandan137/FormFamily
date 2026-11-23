@@ -545,7 +545,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             className={cn(
               'flex-1',
               pathname.includes('/edit')
-                ? 'p-4 md:p-6 lg:p-8'
+                ? 'flex min-h-0 flex-col overflow-hidden p-0'
                 : pathname === '/families'
                   ? 'p-0 md:p-0 lg:p-0'
                   : 'p-4 md:p-6 lg:p-8',
@@ -554,9 +554,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <div
               className={cn(
                 'w-full',
-                pathname.includes('/edit') || pathname === '/families'
-                  ? 'h-full max-w-none'
-                  : 'mx-auto max-w-[1200px]',
+                pathname.includes('/edit')
+                  ? 'flex h-full min-h-0 max-w-none flex-col'
+                  : pathname === '/families'
+                    ? 'h-full max-w-none'
+                    : 'mx-auto max-w-[1200px]',
               )}
             >
               {children}

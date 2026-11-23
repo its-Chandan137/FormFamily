@@ -30,6 +30,8 @@ export interface FormRendererProps {
   submitting?: boolean;
   submitLabel?: string;
   disableSubmit?: boolean;
+  /** Force a viewport layout for preview simulations. */
+  previewMode?: 'desktop' | 'mobile';
 }
 
 function FieldLabel({
@@ -55,6 +57,7 @@ export function FormRenderer({
   submitting,
   submitLabel,
   disableSubmit,
+  previewMode,
 }: FormRendererProps) {
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -752,6 +755,13 @@ export function FormRenderer({
           (() => {
             const desktop = resolved.settings.layoutColumns ?? 1;
             const mobile = resolved.settings.mobileLayoutColumns ?? 1;
+            if (previewMode === 'mobile') {
+              if (mobile <= 1) return 'space-y-5';
+              return cn(
+                'grid gap-5',
+                mobile === 2 ? 'grid-cols-2' : 'grid-cols-1',
+              );
+            }
             if (desktop <= 1 && mobile <= 1) return 'space-y-5';
             const mobileClass =
               mobile === 2
