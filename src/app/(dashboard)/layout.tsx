@@ -291,14 +291,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         )}
       </div>
 
-      <div className={cn('px-2 pb-2', rail && 'px-1.5')}>
+      <div className={cn('px-2 pb-2', rail && 'flex justify-center px-1.5')}>
         <Link
           href="/forms/new"
           onClick={onNavigate}
           title={rail ? 'New form' : undefined}
           className={cn(
-            'bg-primary text-primary-foreground focus-visible:ring-ring inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md px-3.5 text-sm font-medium shadow-xs transition-colors hover:bg-[#4338CA] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none dark:hover:bg-[#5558E3]',
-            rail && 'h-9 w-9 px-0',
+            'bg-primary text-primary-foreground focus-visible:ring-ring inline-flex h-9 items-center justify-center gap-1.5 rounded-md text-sm font-medium shadow-xs transition-colors hover:bg-[#4338CA] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none dark:hover:bg-[#5558E3]',
+            rail ? 'w-9 px-0' : 'w-full px-3.5',
           )}
         >
           <Plus className="size-4" aria-hidden />
@@ -306,7 +306,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-4 overflow-y-auto px-2 py-1">
+      <nav
+        className={cn(
+          'flex-1 space-y-4 overflow-y-auto px-2 py-1',
+          rail && 'px-1.5',
+        )}
+      >
         <div className="space-y-1">
           {!rail ? (
             <div className="text-subtle px-2 py-1 text-[11px] font-medium tracking-wide uppercase">
@@ -325,7 +330,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
       </nav>
 
-      <div className="border-border mt-auto space-y-1 border-t p-2">
+      <div
+        className={cn(
+          'border-border mt-auto space-y-1 border-t p-2',
+          rail && 'px-1.5',
+        )}
+      >
         {rail ? (
           <button
             type="button"
