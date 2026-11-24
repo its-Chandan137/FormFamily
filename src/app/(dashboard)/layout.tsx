@@ -31,6 +31,7 @@ import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -366,12 +367,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             side="top"
             className="w-56"
           >
-            <DropdownMenuLabel>
-              <div className="font-medium">Alex Morgan</div>
-              <div className="text-muted-foreground text-xs font-normal">
-                alex@northwindlabs.com
-              </div>
-            </DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>
+                <div className="font-medium">Alex Morgan</div>
+                <div className="text-muted-foreground text-xs font-normal">
+                  alex@northwindlabs.com
+                </div>
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => router.push('/settings')}>
               <Settings className="size-4" />
