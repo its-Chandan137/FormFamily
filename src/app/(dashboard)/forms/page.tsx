@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { QuickEditDialog } from '@/components/forms/QuickEditDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -100,6 +101,7 @@ export default function FormsPage() {
   const [createChildFor, setCreateChildFor] = useState<string | null>(null);
   const [detachFor, setDetachFor] = useState<string | null>(null);
   const [deleteFor, setDeleteFor] = useState<string | null>(null);
+  const [quickEditFor, setQuickEditFor] = useState<string | null>(null);
 
   const submissionCountByForm = useMemo(() => {
     const m = new Map<string, number>();
@@ -369,56 +371,74 @@ export default function FormsPage() {
                               className="text-right"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <DropdownMenu>
-                                <DropdownMenuTrigger className="text-muted-foreground hover:bg-surface-muted hover:text-foreground inline-flex size-8 items-center justify-center rounded-md opacity-100 transition-opacity md:opacity-0 md:group-hover/row:opacity-100 md:focus:opacity-100">
-                                  <MoreHorizontal className="size-4" />
-                                  <span className="sr-only">
-                                    Actions for {f.name}
-                                  </span>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      router.push(`/forms/${f.id}/edit`)
-                                    }
-                                  >
-                                    <Pencil className="mr-2 size-4" /> Open
-                                    builder
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => void copyLink(f.slug)}
-                                  >
-                                    <Copy className="mr-2 size-4" /> Copy public
-                                    link
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => router.push(`/f/${f.slug}`)}
-                                  >
-                                    <ExternalLink className="mr-2 size-4" />{' '}
-                                    Open public form
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    onClick={() => setCreateChildFor(f.id)}
-                                  >
-                                    <Plus className="mr-2 size-4" /> Create
-                                    child
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => setDetachFor(f.id)}
-                                    disabled={!f.parentFormId}
-                                  >
-                                    <Unlink className="mr-2 size-4" /> Detach
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    onClick={() => setDeleteFor(f.id)}
-                                    className="text-destructive focus:text-destructive"
-                                  >
-                                    <Trash2 className="mr-2 size-4" /> Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  aria-label={`Quick edit ${f.name}`}
+                                  onClick={() => setQuickEditFor(f.id)}
+                                >
+                                  <Pencil className="size-4" />
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger className="text-muted-foreground hover:bg-surface-muted hover:text-foreground inline-flex size-8 items-center justify-center rounded-md opacity-100 transition-opacity md:opacity-0 md:group-hover/row:opacity-100 md:focus:opacity-100">
+                                    <MoreHorizontal className="size-4" />
+                                    <span className="sr-only">
+                                      Actions for {f.name}
+                                    </span>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() => setQuickEditFor(f.id)}
+                                    >
+                                      <Pencil className="mr-2 size-4" /> Quick
+                                      edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        router.push(`/forms/${f.id}/edit`)
+                                      }
+                                    >
+                                      <LayoutList className="mr-2 size-4" />{' '}
+                                      Open builder
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => void copyLink(f.slug)}
+                                    >
+                                      <Copy className="mr-2 size-4" /> Copy
+                                      public link
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        router.push(`/f/${f.slug}`)
+                                      }
+                                    >
+                                      <ExternalLink className="mr-2 size-4" />{' '}
+                                      Open public form
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => setCreateChildFor(f.id)}
+                                    >
+                                      <Plus className="mr-2 size-4" /> Create
+                                      child
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => setDetachFor(f.id)}
+                                      disabled={!f.parentFormId}
+                                    >
+                                      <Unlink className="mr-2 size-4" /> Detach
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => setDeleteFor(f.id)}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      <Trash2 className="mr-2 size-4" /> Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
                             </TableCell>
                           </TableRow>
                         );
@@ -475,6 +495,13 @@ export default function FormsPage() {
                           <Button
                             size="sm"
                             variant="secondary"
+                            onClick={() => setQuickEditFor(f.id)}
+                          >
+                            <Pencil className="size-4" /> Quick edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             onClick={() => router.push(`/forms/${f.id}/edit`)}
                           >
                             Open builder
@@ -542,6 +569,11 @@ export default function FormsPage() {
         open={!!deleteFor}
         onOpenChange={(o) => !o && setDeleteFor(null)}
         formId={deleteFor}
+      />
+      <QuickEditDialog
+        formId={quickEditFor}
+        open={!!quickEditFor}
+        onOpenChange={(o) => !o && setQuickEditFor(null)}
       />
     </div>
   );
