@@ -115,7 +115,16 @@ function getBreadcrumbs(pathname: string, formNameById: Map<string, string>) {
       label = formNameById.get(part)!;
     }
     const isLast = i === parts.length - 1;
-    crumbs.push({ label, href: isLast ? undefined : acc });
+    let href = isLast ? undefined : acc;
+    if (
+      !isLast &&
+      prev === 'forms' &&
+      part !== 'new' &&
+      formNameById.has(part)
+    ) {
+      href = `/forms/${part}/edit`;
+    }
+    crumbs.push({ label, href });
   }
   return crumbs;
 }
