@@ -372,6 +372,27 @@ export function BuilderEditor({ formId }: { formId: string }) {
     }),
   );
 
+  const collisionDetection: typeof pointerWithin = useCallback((args) => {
+    const activeId = String(args.active.id);
+    if (activeId.startsWith('palette:')) {
+      const pointer = pointerWithin(args);
+      if (pointer.length > 0) {
+        const slots = pointer.filter((c) => String(c.id).startsWith('slot:'));
+        if (slots.length > 0) return slots;
+        return pointer;
+      }
+      return closestCenter(args);
+    }
+    const pointer = pointerWithin(args);
+    const pointerItems = pointer.filter(
+      (c) => !String(c.id).startsWith('slot:'),
+    );
+    if (pointerItems.length > 0) return pointerItems;
+    const center = closestCenter(args);
+    const centerItems = center.filter((c) => !String(c.id).startsWith('slot:'));
+    return centerItems.length > 0 ? centerItems : center;
+  }, []);
+
   const resolved = useMemo(() => {
     if (!form || !draft) return null;
     try {
@@ -604,15 +625,46 @@ export function BuilderEditor({ formId }: { formId: string }) {
   };
 
   const onDragOver = (e: DragOverEvent) => {
-    const overStr = e.over ? String(e.over.id) : null;
-    setOverId(overStr);
-    if (!activeId) return;
-    const pos = computeAnnouncedPosition(activeId, overStr);
-    if (!pos) return;
-    const data = e.active.data.current as unknown as
+    const rawOverStr = e.over ? String(e.over.id) : null;
+    const activeData = e.active.data.current as unknown as
       { source?: string; item?: PaletteItemDef } | undefined;
-    if (data?.source === 'palette') {
-      setAnnounce(`Moving ${data.item?.label ?? 'item'}, position ${pos}`);
+    let visualOverId = rawOverStr;
+
+    if (
+      rawOverStr &&
+      !rawOverStr.startsWith('slot:') &&
+      activeData?.source !== 'palette' &&
+      resolved
+    ) {
+      const idx = resolved.items.findIndex((i) => getItemId(i) === rawOverStr);
+      if (idx >= 0) {
+        const pointerY =
+          (e.activatorEvent as PointerEvent | null)?.clientY != null
+            ? (e.activatorEvent as PointerEvent).clientY + (e.delta?.y ?? 0)
+            : e.active.rect.current.translated
+              ? e.active.rect.current.translated.top +
+                e.active.rect.current.translated.height / 2
+              : null;
+        const overRect = e.over?.rect;
+        const overMidY = overRect ? overRect.top + overRect.height / 2 : null;
+        const slotIndex =
+          pointerY != null && overMidY != null
+            ? pointerY > overMidY
+              ? idx + 1
+              : idx
+            : idx;
+        visualOverId = `slot:${Math.max(0, Math.min(resolved.items.length, slotIndex))}`;
+      }
+    }
+
+    setOverId(visualOverId);
+    if (!activeId) return;
+    const pos = computeAnnouncedPosition(activeId, visualOverId);
+    if (!pos) return;
+    if (activeData?.source === 'palette') {
+      setAnnounce(
+        `Moving ${activeData.item?.label ?? 'item'}, position ${pos}`,
+      );
     } else {
       const item = resolved?.items.find((i) => getItemId(i) === activeId);
       if (item)
@@ -637,15 +689,29 @@ export function BuilderEditor({ formId }: { formId: string }) {
     const activeStr = String(active.id);
     const overStr = String(over.id);
 
-    // Determine target slot index
+    const pointerY =
+      (e.activatorEvent as PointerEvent | null)?.clientY != null
+        ? (e.activatorEvent as PointerEvent).clientY + (e.delta?.y ?? 0)
+        : active.rect.current.translated
+          ? active.rect.current.translated.top +
+            active.rect.current.translated.height / 2
+          : null;
+
     let targetIndex: number | null = slotIndexFromOverId(
       overStr,
       resolved.items.length,
     );
     if (targetIndex === null) {
-      // dropped over an item: place before that item
       const idx = resolved.items.findIndex((i) => getItemId(i) === overStr);
-      if (idx >= 0) targetIndex = idx;
+      if (idx >= 0) {
+        const overRect = over.rect;
+        const overMidY = overRect ? overRect.top + overRect.height / 2 : null;
+        if (pointerY != null && overMidY != null) {
+          targetIndex = pointerY > overMidY ? idx + 1 : idx;
+        } else {
+          targetIndex = idx;
+        }
+      }
     }
     if (targetIndex === null) return;
 
@@ -653,15 +719,12 @@ export function BuilderEditor({ formId }: { formId: string }) {
       const data = active.data.current as any;
       const item = data?.item as PaletteItemDef | undefined;
       if (!item) return;
-      // if dropping "after" in a way that results from over being item, fine; targetIndex is index before over item
-      // but if over is a slot:N, N is already the index
       const insertAfter = getInsertAfterForSlot(targetIndex);
       addPaletteItem(item, insertAfter);
       setAnnounce(`Dropped ${item.label} on canvas`);
       return;
     }
 
-    // reorder canvas item (own or inherited)
     const activeItem = resolved.items.find((i) => getItemId(i) === activeStr);
     if (!activeItem) return;
     if (activeItem.kind === 'field' && activeItem.field.locked) return;
@@ -669,10 +732,14 @@ export function BuilderEditor({ formId }: { formId: string }) {
       (i) => getItemId(i) === activeStr,
     );
     if (oldIndex === -1) return;
+
     let newIndex = targetIndex;
-    // if moving down, dropping at slot after items means after removal index shifts; adjust
     if (oldIndex < newIndex) newIndex = newIndex - 1;
     newIndex = Math.max(0, Math.min(resolved.items.length - 1, newIndex));
+    if (newIndex === oldIndex) {
+      setAnnounce('Item position unchanged');
+      return;
+    }
 
     const ids = resolved.items.map(getItemId);
     const reordered = ids.slice();
@@ -696,9 +763,8 @@ export function BuilderEditor({ formId }: { formId: string }) {
       };
     }
     applyEdit(next);
-    const posHuman = pos + 1;
     setAnnounce(
-      `Moved ${resolvedItemLabel(activeItem)} to position ${posHuman} of ${resolved.items.length}`,
+      `Moved ${resolvedItemLabel(activeItem)} to position ${pos + 1} of ${resolved.items.length}`,
     );
   };
 
@@ -1212,7 +1278,7 @@ export function BuilderEditor({ formId }: { formId: string }) {
       <div className="hidden min-h-0 flex-1 flex-col overflow-hidden lg:flex">
         <DndContext
           sensors={sensors}
-          collisionDetection={pointerWithin}
+          collisionDetection={collisionDetection}
           onDragStart={onDragStart}
           onDragOver={onDragOver}
           onDragEnd={onDragEnd}

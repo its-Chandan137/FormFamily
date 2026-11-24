@@ -2,11 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
+import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
   ChevronDown,
@@ -48,7 +44,7 @@ function DropSlot({
   const { setNodeRef, isOver } = useDroppable({ id, data: { type: 'slot' } });
   const show = active && (isOver || overId === id);
   return (
-    <div ref={setNodeRef} className="relative h-3" aria-hidden>
+    <div ref={setNodeRef} className="relative -my-1.5 h-6" aria-hidden>
       <div
         className={cn(
           'absolute inset-x-2 top-1/2 h-0.5 -translate-y-1/2 rounded-full transition-all',
@@ -793,10 +789,7 @@ export function BuilderCanvas({
               </p>
             </div>
           ) : (
-            <SortableContext
-              items={itemIds}
-              strategy={verticalListSortingStrategy}
-            >
+            <SortableContext items={itemIds}>
               {items.length === 0 ? (
                 <div
                   className={cn(
