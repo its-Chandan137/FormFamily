@@ -143,9 +143,17 @@ export function applyConflictMerges(
   return Array.from(byId.values());
 }
 
+export interface PublishPropagationOptions {
+  /** When true, update descendant ancestorVersionPins for this form to the newly
+   * published version so existing inheriting forms resolve against the new content.
+   * When false (default), existing descendants keep their current pins. */
+  propagateToDescendants?: boolean;
+}
+
 export function publishFormWithPropagation(
   forms: FormRecord[],
   formId: string,
+  options?: PublishPropagationOptions,
 ): { updatedForms: FormRecord[]; publishedVersion: FormVersion } {
   const byId = new Map(forms.map((f) => [f.id, clone(f) as FormRecord]));
   const form = byId.get(formId);
@@ -185,6 +193,14 @@ export function publishFormWithPropagation(
   for (const dId of descendants) {
     const d = byId.get(dId);
     if (!d) continue;
+    if (options?.propagateToDescendants) {
+      d.ancestorVersionPins = {
+        ...(d.ancestorVersionPins ?? {}),
+        [formId]: version.id,
+      };
+      d.updatedAt = new Date().toISOString();
+      byId.set(dId, d);
+    }
     if (!d.publishedVersionId) continue; // no published version to update snapshot for? skip
     const pub = d.versions.find((v) => v.id === d.publishedVersionId);
     if (!pub) continue;

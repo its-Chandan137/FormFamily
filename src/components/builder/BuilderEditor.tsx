@@ -304,6 +304,7 @@ export function BuilderEditor({ formId }: { formId: string }) {
   const [pendingContent, setPendingContent] = useState<FormContent | null>(
     null,
   );
+  const [propagateToDescendants, setPropagateToDescendants] = useState(false);
   const [createChildOpen, setCreateChildOpen] = useState(false);
   const [detachOpen, setDetachOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -894,6 +895,7 @@ export function BuilderEditor({ formId }: { formId: string }) {
 
     const contentToPublish = clone(draft);
     setPendingContent(contentToPublish);
+    setPropagateToDescendants(false);
     const found = findPublishKeyConflicts(
       forms as any,
       form.id,
@@ -955,7 +957,11 @@ export function BuilderEditor({ formId }: { formId: string }) {
     else await doPublish(contentToPublish, forms);
   };
 
-  const doPublish = async (content: FormContent, baseForms: FormRecord[]) => {
+  const doPublish = async (
+    content: FormContent,
+    baseForms: FormRecord[],
+    options?: { propagateToDescendants?: boolean },
+  ) => {
     if (!form) return;
     try {
       const working = baseForms.map((f) =>
@@ -964,6 +970,7 @@ export function BuilderEditor({ formId }: { formId: string }) {
       const { updatedForms, publishedVersion } = publishFormWithPropagation(
         working as any,
         form.id,
+        options,
       );
       await formsRepository.saveMany(updatedForms as any);
       for (const f of updatedForms) dispatch(upsertForm(f as any));
@@ -984,6 +991,7 @@ export function BuilderEditor({ formId }: { formId: string }) {
       setShowImpact(false);
       setShowConflict(false);
       setPendingContent(null);
+      setPropagateToDescendants(false);
     } catch (e: any) {
       toast.error(e?.message || 'Failed to publish form');
     }
@@ -992,7 +1000,8 @@ export function BuilderEditor({ formId }: { formId: string }) {
   const onImpactContinue = async () => {
     setShowImpact(false);
     if (conflicts.length > 0) setShowConflict(true);
-    else if (pendingContent) await doPublish(pendingContent, forms);
+    else if (pendingContent)
+      await doPublish(pendingContent, forms, { propagateToDescendants });
   };
 
   const buildConflictDetails = (): KeyConflictDetail[] => {
@@ -1044,7 +1053,9 @@ export function BuilderEditor({ formId }: { formId: string }) {
       );
       await formsRepository.saveMany(mergedForms as any);
       for (const f of mergedForms) dispatch(upsertForm(f as any));
-      await doPublish(pendingContent, mergedForms as any);
+      await doPublish(pendingContent, mergedForms as any, {
+        propagateToDescendants,
+      });
     } catch (e: any) {
       toast.error(e?.message || 'Failed to merge conflicts');
     }
@@ -1410,10 +1421,13 @@ export function BuilderEditor({ formId }: { formId: string }) {
         open={showImpact}
         onOpenChange={setShowImpact}
         items={impactItems}
+        propagateToDescendants={propagateToDescendants}
+        onPropagateChange={setPropagateToDescendants}
         onContinue={onImpactContinue}
         onCancel={() => {
           setShowImpact(false);
           setPendingContent(null);
+          setPropagateToDescendants(false);
         }}
       />
       <KeyConflictDialog
